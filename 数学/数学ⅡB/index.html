@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#00796b">
+  <meta name="description" content="数学Ⅱ・Bを単元の概要・詳細・公式・トピック・共通テスト形式のクイズで学べるアプリ">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="数学ⅡB">
+  <title>数学Ⅱ・B</title>
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="icon-192.png" type="image/png">
+  <link rel="apple-touch-icon" href="apple-touch-icon.png">
+  <link rel="stylesheet" href="style.css?v=1">
+</head>
+<body>
+  <header class="app-header">
+    <a class="home-btn" href="../" title="分野一覧にもどる" aria-label="分野一覧にもどる">◀</a>
+    <h1 id="app-title">📈 数学Ⅱ・B</h1>
+    <div class="head-actions">
+      <button id="btn-search" class="icon-btn" title="用語検索" aria-label="用語検索">🔍</button>
+      <button id="btn-settings" class="icon-btn" title="設定" aria-label="設定">⚙️</button>
+    </div>
+  </header>
+
+  <nav class="tabs" role="tablist">
+    <button class="tab active" data-tab="eras"><span class="ti">📜</span><span class="tl" id="tab-label-unit">単元</span></button>
+    <button class="tab" data-tab="timeline"><span class="ti">📐</span><span class="tl" id="tab-label-list">公式</span></button>
+    <button class="tab" data-tab="themes"><span class="ti">🧭</span><span class="tl">テーマ別</span></button>
+    <button class="tab" data-tab="topics"><span class="ti">💡</span><span class="tl">トピック</span></button>
+    <button class="tab" data-tab="quiz"><span class="ti">📝</span><span class="tl">クイズ</span></button>
+    <button class="tab" data-tab="stats"><span class="ti">📊</span><span class="tl">記録</span></button>
+    <button class="tab" data-tab="saved"><span class="ti">⭐</span><span class="tl">保存</span></button>
+  </nav>
+
+  <main>
+    <!-- 時代 -->
+    <section id="tab-eras" class="panel active">
+      <div id="era-list-view">
+        <p class="lead" id="lead-units">単元を選ぶと、概要・詳細・重要用語・公式・トピックが読めます。</p>
+        <div id="era-grid" class="era-grid"></div>
+      </div>
+
+      <article id="era-detail-view" class="hidden">
+        <div class="detail-bar">
+          <button id="btn-era-back" class="btn ghost">← 単元一覧</button>
+          <span class="spacer"></span>
+          <button id="btn-era-prev" class="btn ghost" title="前の単元">◀</button>
+          <button id="btn-era-next" class="btn ghost" title="次の単元">▶</button>
+        </div>
+        <div id="era-hero" class="era-hero"></div>
+        <div id="era-subtabs" class="subtabs">
+          <button class="subtab active" data-sub="summary">概要</button>
+          <button class="subtab" data-sub="detail">詳細</button>
+          <button class="subtab" data-sub="words">用語・区別</button>
+          <button class="subtab" data-sub="chrono"><span id="sub-label-list">公式</span></button>
+          <button class="subtab" data-sub="topic">トピック</button>
+          <button class="subtab" data-sub="eq">クイズ</button>
+        </div>
+        <div id="era-body"></div>
+      </article>
+    </section>
+
+    <!-- 年表 -->
+    <section id="tab-timeline" class="panel">
+      <div class="card tight">
+        <div class="row wrap">
+          <input id="tl-search" type="text" placeholder="🔍 公式を検索（例：加法定理、等差数列、接線）">
+        </div>
+        <div id="tl-chips" class="filter-row"></div>
+      </div>
+      <div id="tl-count" class="muted small"></div>
+      <ol id="tl-list" class="timeline"></ol>
+    </section>
+
+    <!-- テーマ史 -->
+    <section id="tab-themes" class="panel">
+      <p class="lead">単元をまたいで眺めると、関数と数列を貫く考え方が見えてきます。</p>
+      <div id="theme-list"></div>
+    </section>
+
+    <!-- トピック -->
+    <section id="tab-topics" class="panel">
+      <p class="lead">「なぜその式になるのか」を掘り下げた読み物です。考え方の土台になります。</p>
+      <div id="topic-chips" class="filter-row"></div>
+      <div id="topic-list"></div>
+    </section>
+
+    <!-- クイズ -->
+    <section id="tab-quiz" class="panel">
+      <div id="quiz-setup">
+        <div class="card">
+          <strong>出題範囲</strong>
+          <div id="q-era-chips" class="filter-row"></div>
+          <strong class="mt">分野</strong>
+          <div id="q-cat-chips" class="filter-row"></div>
+          <strong class="mt">出題形式</strong>
+          <div id="q-type-chips" class="filter-row"></div>
+          <div class="row wrap mt">
+            <label class="inline">問題数
+              <select id="q-count">
+                <option value="5">5問</option>
+                <option value="10" selected>10問</option>
+                <option value="20">20問</option>
+                <option value="0">すべて</option>
+              </select>
+            </label>
+            <label class="check"><input id="q-weak" type="checkbox"> 苦手な問題を優先</label>
+            <span class="spacer"></span>
+            <span id="q-pool" class="muted small"></span>
+          </div>
+          <div class="row">
+            <span class="spacer"></span>
+            <button id="btn-quiz-start" class="btn primary">▶ 出題開始</button>
+          </div>
+        </div>
+        <div class="card">
+          <strong>📘 出題形式について</strong>
+          <ul class="note-list" id="type-notes"></ul>
+          <p class="muted small">いずれも大学入学共通テストで定番の出題形式です。</p>
+        </div>
+      </div>
+
+      <div id="quiz-play" class="hidden">
+        <div class="row">
+          <button id="btn-quiz-quit" class="btn ghost">← 設定へ</button>
+          <span class="spacer"></span>
+          <span id="q-progress" class="muted"></span>
+        </div>
+        <div class="progress-bar"><div id="q-bar"></div></div>
+        <div id="q-area"></div>
+        <div class="row">
+          <button id="btn-q-save" class="btn ghost">⭐ この問題を保存</button>
+          <span class="spacer"></span>
+          <button id="btn-q-next" class="btn primary hidden">次の問題 →</button>
+        </div>
+      </div>
+
+      <div id="quiz-result" class="hidden"></div>
+    </section>
+
+    <!-- 記録 -->
+    <section id="tab-stats" class="panel">
+      <div id="stat-tiles" class="tiles"></div>
+      <div class="card">
+        <strong id="stat-label-unit">単元別の正答率</strong>
+        <div id="stat-era" class="bars"></div>
+      </div>
+      <div class="card">
+        <strong>分野別の正答率</strong>
+        <div id="stat-cat" class="bars"></div>
+      </div>
+      <div class="card">
+        <strong id="stat-label-read">📖 読んだ単元</strong>
+        <div id="stat-read" class="read-grid"></div>
+      </div>
+      <div class="card">
+        <strong>😓 まちがえた問題トップ10</strong>
+        <ul id="stat-weak" class="list compact"></ul>
+      </div>
+      <div class="row">
+        <span class="spacer"></span>
+        <button id="btn-reset-stats" class="btn ghost">🗑️ 学習記録をリセット</button>
+      </div>
+    </section>
+
+    <!-- 保存 -->
+    <section id="tab-saved" class="panel">
+      <div class="subtabs">
+        <button class="savedtab active" data-sv="word">⭐ 用語</button>
+        <button class="savedtab" data-sv="quiz">📝 問題</button>
+      </div>
+      <div id="saved-area"></div>
+    </section>
+  </main>
+
+  <!-- 検索 -->
+  <dialog id="search-dialog">
+    <div class="dlg">
+      <div class="row">
+        <input id="sd-input" type="text" placeholder="用語・区別・公式 を検索" autocomplete="off">
+        <button id="sd-close" class="icon-btn">✕</button>
+      </div>
+      <div id="sd-results" class="sd-results"></div>
+    </div>
+  </dialog>
+
+  <!-- 設定 -->
+  <dialog id="settings-dialog">
+    <form method="dialog" class="dlg settings">
+      <h2>設定</h2>
+      <label class="check"><input id="set-furigana" type="checkbox"> 用語によみがなを表示する</label>
+      <label class="check"><input id="set-shuffle" type="checkbox" checked> 選択肢の順番をシャッフルする</label>
+      <label>文字の大きさ
+        <select id="set-fontsize">
+          <option value="15">小</option>
+          <option value="16" selected>標準</option>
+          <option value="18">大</option>
+          <option value="20">特大</option>
+        </select>
+      </label>
+      <label>配色
+        <select id="set-theme">
+          <option value="auto" selected>端末に合わせる</option>
+          <option value="light">ライト</option>
+          <option value="dark">ダーク</option>
+        </select>
+      </label>
+      <div class="row">
+        <span class="spacer"></span>
+        <button value="close" class="btn primary">閉じる</button>
+      </div>
+      <p class="muted small">学習記録はこの端末のブラウザ内にのみ保存されます。</p>
+    </form>
+  </dialog>
+
+  <div id="toast" class="toast"></div>
+
+  <script src="data-units.js?v=1"></script>
+  <script src="data-quiz.js?v=1"></script>
+  <script src="data-themes.js?v=1"></script>
+  <script src="app.js?v=1"></script>
+</body>
+</html>

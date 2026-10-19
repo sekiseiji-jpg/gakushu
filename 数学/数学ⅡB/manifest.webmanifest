@@ -1,0 +1,30 @@
+{
+  "name": "数学Ⅱ・B",
+  "short_name": "数学ⅡB",
+  "description": "数学Ⅱ・Bを単元の概要・詳細・公式・トピック・共通テスト形式のクイズで学べるアプリ",
+  "lang": "ja",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#f3f9f8",
+  "theme_color": "#00796b",
+  "icons": [
+    {
+      "src": "icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    },
+    {
+      "src": "icon-maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}

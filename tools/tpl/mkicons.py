@@ -69,7 +69,40 @@ def enso(d, cx, cy, r, t):
     d.arc([cx-r, cy-r, cx+r, cy+r], 128, 68, fill=FG, width=t)
     d.ellipse([cx-int(r*0.17), cy-int(r*0.17), cx+int(r*0.17), cy+int(r*0.17)], fill=FG)
 
-SHAPES={'物理':atom, '化学':flask, '生物':dna, '地学':earth, '倫理':enso}
+def graph(d, cx, cy, r, t):
+    # 直角三角形と直角記号（数学Ⅰ・A：三角比・図形と計量）
+    lx, rx = cx-int(r*0.88), cx+int(r*0.88)
+    by, ty = cy+int(r*0.72), cy-int(r*0.78)
+    d.line([lx, by, rx, by], fill=FG, width=t)    # 底辺
+    d.line([lx, by, lx, ty], fill=FG, width=t)    # 高さ
+    d.line([lx, ty, rx, by], fill=FG, width=t)    # 斜辺
+    m=int(r*0.26)                                  # 直角の印
+    d.line([lx+m, by, lx+m, by-m], fill=FG, width=max(1,int(t*0.8)))
+    d.line([lx, by-m, lx+m, by-m], fill=FG, width=max(1,int(t*0.8)))
+
+def sigma(d, cx, cy, r, t):
+    # 総和記号と数列の点（数学Ⅱ・B）
+    w=int(r*0.72); h=int(r*0.86)
+    d.line([cx-w, cy-h, cx+w, cy-h], fill=FG, width=t)
+    d.line([cx+w, cy-h, cx-int(w*0.15), cy], fill=FG, width=t)
+    d.line([cx-int(w*0.15), cy, cx+w, cy+h], fill=FG, width=t)
+    d.line([cx+w, cy+h, cx-w, cy+h], fill=FG, width=t)
+    d.line([cx-w, cy-h, cx-w, cy-h], fill=FG, width=t)
+
+def integral(d, cx, cy, r, t):
+    # 積分記号（数学Ⅲ・C）
+    pts=[]
+    for i in range(0, 101):
+        u=i/100.0
+        y=cy-r+2*r*u
+        x=cx+int(r*0.42*math.sin((u-0.5)*math.pi*1.9))
+        pts.append((x, y))
+    d.line(pts, fill=FG, width=t, joint='curve')
+    d.arc([cx+int(r*0.10), cy-r-int(r*0.30), cx+int(r*0.72), cy-r+int(r*0.32)], 160, 20, fill=FG, width=t)
+    d.arc([cx-int(r*0.72), cy+r-int(r*0.32), cx-int(r*0.10), cy+r+int(r*0.30)], 340, 200, fill=FG, width=t)
+
+SHAPES={'物理':atom, '化学':flask, '生物':dna, '地学':earth, '倫理':enso,
+        '数学ⅠA':graph, '数学ⅡB':sigma, '数学ⅢC':integral}
 
 def hex2rgb(h):
     h=h.lstrip('#'); return tuple(int(h[i:i+2],16) for i in (0,2,4))
