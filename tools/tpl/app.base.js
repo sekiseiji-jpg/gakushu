@@ -1,0 +1,577 @@
+/* 日本史マスター - アプリ本体 */
+'use strict';
+
+/* ========== 保存データ ========== */
+const KEY = 'nihonshi.v1';
+const defaults = {
+  read: {},        // eraId -> true（概要を読んだ）
+  qstat: {},       // qid -> {o: 出題数, x: 誤答数}
+  erastat: {},     // eraId -> {o, c}
+  catstat: {},     // cat -> {o, c}
+  savedWords: [],  // {w,y,d,era}
+  savedQuiz: [],   // qid
+  sessions: [],    // {d: 日付, n: 問題数, c: 正解数}
+  days: {},        // 日付 -> その日に解いた問題数
+  set: { furigana: false, shuffle: true, fontsize: 16, theme: 'auto' }
+};
+let S = load();
+
+function load() {
+  try {
+    const raw = JSON.parse(localStorage.getItem(KEY) || '{}');
+    return Object.assign({}, defaults, raw, { set: Object.assign({}, defaults.set, raw.set || {}) });
+  } catch (e) { return JSON.parse(JSON.stringify(defaults)); }
+}
+function save() {
+  try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) { /* 容量超過などは無視 */ }
+}
+
+/* ========== 小さな道具 ========== */
+const $ = (s, r) => (r || document).querySelector(s);
+const $$ = (s, r) => Array.from((r || document).querySelectorAll(s));
+const eraById = (id) => ERAS.find((e) => e.id === id);
+const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+const nl2br = (s) => esc(s).replace(/\n/g, '<br>');
+const WH = (typeof APP !== 'undefined' && APP.wordsHeads) || ['重要用語', 'おもな人物'];
+const KINDS = (typeof APP !== 'undefined' && APP.kinds) || { word: '用語', person: '人物', event: 'できごと' };
+const KIND_HINT = KINDS.word + '・' + KINDS.person + '・' + KINDS.event;
+const CIRCLED = ['①', '②', '③', '④', '⑤', '⑥', '⑦', '⑧'];
+const TYPE_LABEL = { sel: '正誤判定', cmb: '組合せ', ord: '年代配列', src: '史料' };
+const CATS = ['政治', '外交', '社会経済', '文化'];
+
+function toast(msg) {
+  const t = $('#toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(toast._t);
+  toast._t = setTimeout(() => t.classList.remove('show'), 1800);
+}
+function shuffle(a) {
+  const r = a.slice();
+  for (let i = r.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [r[i], r[j]] = [r[j], r[i]]; }
+  return r;
+}
+function pct(c, o) { return o ? Math.round((c / o) * 100) : 0; }
+function today() { return new Date().toISOString().slice(0, 10); }
+
+/* ========== タブ ========== */
+$$('.tab').forEach((t) => t.addEventListener('click', () => {
+  $$('.tab').forEach((x) => x.classList.toggle('active', x === t));
+  const name = t.dataset.tab;
+  $$('.panel').forEach((p) => p.classList.toggle('active', p.id === 'tab-' + name));
+  if (name === 'stats') renderStats();
+  if (name === 'saved') renderSaved();
+  window.scrollTo({ top: 0 });
+}));
+
+/* ========== 時代一覧 ========== */
+function renderEraGrid() {
+  $('#era-grid').innerHTML = ERAS.map((e) => `
+    <button class="era-card" style="--ec:${e.color}" data-era="${e.id}">
+      ${S.read[e.id] ? '<span class="ec-badge">読了</span>' : ''}
+      <div class="ec-top"><span class="ec-icon">${e.icon}</span>
+        <div><div class="ec-name">${esc(e.name)}</div>
+        <div class="ec-span">${esc(e.span)}</div></div></div>
+      <div class="ec-catch">${esc(e.catch)}</div>
+    </button>`).join('');
+  $$('#era-grid .era-card').forEach((b) => b.addEventListener('click', () => openEra(b.dataset.era)));
+}
+
+/* ========== 時代詳細 ========== */
+let curEra = null, curSub = 'summary';
+
+function openEra(id, sub) {
+  curEra = id;
+  curSub = sub || 'summary';
+  const e = eraById(id);
+  $('#era-list-view').classList.add('hidden');
+  $('#era-detail-view').classList.remove('hidden');
+  $('#era-hero').style.setProperty('--ec', e.color);
+  $('#era-hero').innerHTML = `
+    <div class="eh-icon">${e.icon}</div>
+    <h2>${esc(e.name)}</h2>
+    <div class="eh-yomi">${esc(e.yomi)}</div>
+    <div class="eh-span">${esc(e.span)}</div>
+    <div class="eh-catch">${esc(e.catch)}</div>`;
+  $$('#era-subtabs .subtab').forEach((b) => b.classList.toggle('active', b.dataset.sub === curSub));
+  if (!S.read[id]) { S.read[id] = true; save(); }
+  renderEraBody();
+  window.scrollTo({ top: 0 });
+}
+
+$('#btn-era-back').addEventListener('click', () => {
+  $('#era-detail-view').classList.add('hidden');
+  $('#era-list-view').classList.remove('hidden');
+  renderEraGrid();
+  window.scrollTo({ top: 0 });
+});
+$('#btn-era-prev').addEventListener('click', () => stepEra(-1));
+$('#btn-era-next').addEventListener('click', () => stepEra(1));
+function stepEra(d) {
+  const i = ERAS.findIndex((e) => e.id === curEra);
+  const n = (i + d + ERAS.length) % ERAS.length;
+  openEra(ERAS[n].id, curSub);
+}
+$$('#era-subtabs .subtab').forEach((b) => b.addEventListener('click', () => {
+  curSub = b.dataset.sub;
+  $$('#era-subtabs .subtab').forEach((x) => x.classList.toggle('active', x === b));
+  renderEraBody();
+}));
+
+function renderEraBody() {
+  const e = eraById(curEra);
+  const box = $('#era-body');
+  const fg = S.set.furigana;
+  if (curSub === 'summary') {
+    box.innerHTML = `<div class="card">${e.summary.map((p) => `<p class="para">${esc(p)}</p>`).join('')}</div>
+      <div class="card"><div class="sec-title">この時代のおもなできごと</div>
+      ${e.events.slice(0, 6).map((v) => `<div class="item"><div class="item-h">${esc(v.y)} ${esc(v.t)}</div></div>`).join('')}
+      <button class="more-btn" data-goto="chrono">年表をすべて見る →</button></div>`;
+    const g = $('[data-goto]', box);
+    if (g) g.addEventListener('click', () => { curSub = 'chrono'; $$('#era-subtabs .subtab').forEach((x) => x.classList.toggle('active', x.dataset.sub === 'chrono')); renderEraBody(); });
+  } else if (curSub === 'detail') {
+    box.innerHTML = e.sections.map((s) => `<div class="card">
+      <div class="sec-title">${esc(s.t)}</div>
+      ${s.items.map((i) => `<div class="item"><div class="item-h">${esc(i.h)}</div><p class="item-b">${esc(i.b)}</p></div>`).join('')}
+    </div>`).join('');
+  } else if (curSub === 'words') {
+    box.innerHTML = `<div class="card"><div class="sec-title">${WH[0]}</div><div class="kw-list">
+      ${e.keywords.map((k) => kwHTML(k, e, fg)).join('')}</div></div>
+      <div class="card"><div class="sec-title">${WH[1]}</div><div class="kw-list">
+      ${e.people.map((p) => kwHTML({ w: p.n, y: p.y, d: p.d }, e, fg)).join('')}</div></div>`;
+    bindStars(box);
+  } else if (curSub === 'chrono') {
+    box.innerHTML = `<div class="card"><ol class="timeline" style="--ec:${e.color}">
+      ${e.events.map((v) => `<li class="tl-item"><div class="tl-y">${esc(v.y)}</div>
+        <div class="tl-t">${esc(v.t)}</div><div class="tl-d">${esc(v.d)}</div></li>`).join('')}
+    </ol></div>`;
+  } else if (curSub === 'topic') {
+    box.innerHTML = e.topics.map((t) => topicHTML(t, e)).join('');
+    bindFold(box);
+  } else if (curSub === 'eq') {
+    const list = QUIZ.filter((q) => q.era === curEra);
+    box.innerHTML = `<div class="card">
+      <p>この時代の問題は <b>${list.length}問</b> あります。センター試験形式（正誤判定・組合せ・年代配列・史料）で出題します。</p>
+      <div class="row"><span class="spacer"></span><button class="btn primary" id="btn-era-quiz">▶ この時代のクイズを解く</button></div></div>`;
+    $('#btn-era-quiz').addEventListener('click', () => {
+      qFilter.era = new Set([curEra]); qFilter.cat = new Set(CATS); qFilter.type = new Set(Object.keys(TYPE_LABEL));
+      $$('.tab').forEach((x) => x.classList.toggle('active', x.dataset.tab === 'quiz'));
+      $$('.panel').forEach((p) => p.classList.toggle('active', p.id === 'tab-quiz'));
+      renderQuizSetup();
+      startQuiz();
+    });
+  }
+}
+
+function kwHTML(k, e, fg) {
+  const on = S.savedWords.some((w) => w.w === k.w);
+  return `<div class="kw"><div class="kw-main">
+    <span class="kw-w">${esc(k.w)}</span>${fg ? `<span class="kw-y">${esc(k.y)}</span>` : ''}
+    <div class="kw-d">${esc(k.d)}</div></div>
+    <button class="star ${on ? 'on' : ''}" data-w="${esc(k.w)}" data-y="${esc(k.y)}" data-d="${esc(k.d)}" data-era="${e.id}" title="保存">${on ? '★' : '☆'}</button></div>`;
+}
+function bindStars(root) {
+  $$('.star', root).forEach((b) => b.addEventListener('click', () => {
+    const w = b.dataset.w;
+    const i = S.savedWords.findIndex((x) => x.w === w);
+    if (i >= 0) { S.savedWords.splice(i, 1); b.classList.remove('on'); b.textContent = '☆'; toast('保存を解除しました'); }
+    else { S.savedWords.push({ w, y: b.dataset.y, d: b.dataset.d, era: b.dataset.era }); b.classList.add('on'); b.textContent = '★'; toast('⭐ 保存しました'); }
+    save();
+  }));
+}
+function topicHTML(t, e) {
+  return `<div class="card topic-card" style="--ec:${e.color}">
+    <span class="topic-era">${esc(e.name)}</span>
+    <h3>${esc(t.t)}</h3>
+    <p class="topic-lead">${esc(t.lead)}</p>
+    <div class="topic-body fold">${t.body.map((p) => `<p>${esc(p)}</p>`).join('')}</div>
+    <button class="more-btn">続きを読む ▼</button></div>`;
+}
+function bindFold(root) {
+  $$('.topic-card', root).forEach((c) => {
+    const body = $('.topic-body', c), btn = $('.more-btn', c);
+    if (!btn) return;
+    btn.addEventListener('click', () => {
+      const open = body.classList.toggle('fold');
+      btn.textContent = open ? '続きを読む ▼' : '閉じる ▲';
+      if (open) c.scrollIntoView({ block: 'nearest' });
+    });
+  });
+}
+
+/* ========== 年表 ========== */
+const ALL_EVENTS = ERAS.flatMap((e) => e.events.map((v) => Object.assign({}, v, { era: e.id, eraName: e.name, color: e.color })))
+  .sort((a, b) => a.n - b.n);
+let tlEra = 'all';
+
+function renderTlChips() {
+  const chips = [{ id: 'all', name: 'すべて' }].concat(ERAS.map((e) => ({ id: e.id, name: e.name })));
+  $('#tl-chips').innerHTML = chips.map((c) => `<button class="chip ${tlEra === c.id ? 'active' : ''}" data-e="${c.id}">${esc(c.name)}</button>`).join('');
+  $$('#tl-chips .chip').forEach((b) => b.addEventListener('click', () => { tlEra = b.dataset.e; renderTlChips(); renderTimeline(); }));
+}
+function renderTimeline() {
+  const q = $('#tl-search').value.trim();
+  let list = ALL_EVENTS;
+  if (tlEra !== 'all') list = list.filter((v) => v.era === tlEra);
+  if (q) list = list.filter((v) => (v.y + v.t + v.d + v.eraName).includes(q));
+  $('#tl-count').textContent = `${list.length}件`;
+  const hi = (s) => (q ? esc(s).split(esc(q)).join(`<mark>${esc(q)}</mark>`) : esc(s));
+  $('#tl-list').innerHTML = list.length ? list.map((v) => `
+    <li class="tl-item" style="--ec:${v.color}">
+      <div><span class="tl-y">${hi(v.y)}</span><span class="tl-era" data-era="${v.era}">${esc(v.eraName)}</span></div>
+      <div class="tl-t">${hi(v.t)}</div><div class="tl-d">${hi(v.d)}</div></li>`).join('')
+    : '<div class="empty">該当する年表項目がありません</div>';
+  $$('#tl-list .tl-era').forEach((b) => b.addEventListener('click', () => gotoEra(b.dataset.era)));
+}
+$('#tl-search').addEventListener('input', renderTimeline);
+
+function gotoEra(id, sub) {
+  $$('.tab').forEach((x) => x.classList.toggle('active', x.dataset.tab === 'eras'));
+  $$('.panel').forEach((p) => p.classList.toggle('active', p.id === 'tab-eras'));
+  openEra(id, sub);
+}
+
+/* ========== テーマ史 ========== */
+function renderThemes() {
+  $('#theme-list').innerHTML = THEMES.map((t) => `
+    <div class="card theme-card" style="--ec:${t.color}">
+      <div class="theme-h"><span class="th-icon">${t.icon}</span><h3>${esc(t.title)}</h3></div>
+      <p class="theme-lead">${esc(t.lead)}</p>
+      <div class="theme-steps">
+        ${t.steps.map((s) => `<div class="th-step"><div class="th-era">${esc(s.era)}</div>
+          <div class="th-t">${esc(s.t)}</div><div class="th-b">${esc(s.b)}</div></div>`).join('')}
+      </div></div>`).join('');
+}
+
+/* ========== トピック ========== */
+let topicEra = 'all';
+function renderTopicChips() {
+  const chips = [{ id: 'all', name: 'すべて' }].concat(ERAS.filter((e) => e.topics.length).map((e) => ({ id: e.id, name: e.name })));
+  $('#topic-chips').innerHTML = chips.map((c) => `<button class="chip ${topicEra === c.id ? 'active' : ''}" data-e="${c.id}">${esc(c.name)}</button>`).join('');
+  $$('#topic-chips .chip').forEach((b) => b.addEventListener('click', () => { topicEra = b.dataset.e; renderTopicChips(); renderTopics(); }));
+}
+function renderTopics() {
+  const eras = topicEra === 'all' ? ERAS : ERAS.filter((e) => e.id === topicEra);
+  const html = eras.flatMap((e) => e.topics.map((t) => topicHTML(t, e))).join('');
+  $('#topic-list').innerHTML = html || '<div class="empty">トピックがありません</div>';
+  bindFold($('#topic-list'));
+}
+
+/* ========== クイズ ========== */
+const qFilter = { era: new Set(ERAS.map((e) => e.id)), cat: new Set(CATS), type: new Set(Object.keys(TYPE_LABEL)) };
+let session = null;
+
+function renderQuizSetup() {
+  const all = qFilter.era.size === ERAS.length;
+  $('#q-era-chips').innerHTML =
+    `<button class="chip ${all ? 'active' : ''}" data-all="1">すべての時代</button>` +
+    ERAS.map((e) => `<button class="chip ${qFilter.era.has(e.id) && !all ? 'active' : ''}" data-e="${e.id}">${esc(e.name)}</button>`).join('');
+  $('#q-cat-chips').innerHTML = CATS.map((c) => `<button class="chip ${qFilter.cat.has(c) ? 'active' : ''}" data-c="${c}">${c}</button>`).join('');
+  $('#q-type-chips').innerHTML = Object.entries(TYPE_LABEL).map(([k, v]) => `<button class="chip ${qFilter.type.has(k) ? 'active' : ''}" data-t="${k}">${v}</button>`).join('');
+
+  $$('#q-era-chips .chip').forEach((b) => b.addEventListener('click', () => {
+    if (b.dataset.all) qFilter.era = new Set(ERAS.map((e) => e.id));
+    else {
+      if (qFilter.era.size === ERAS.length) qFilter.era = new Set();
+      qFilter.era.has(b.dataset.e) ? qFilter.era.delete(b.dataset.e) : qFilter.era.add(b.dataset.e);
+      if (!qFilter.era.size) qFilter.era = new Set(ERAS.map((e) => e.id));
+    }
+    renderQuizSetup();
+  }));
+  $$('#q-cat-chips .chip').forEach((b) => b.addEventListener('click', () => {
+    qFilter.cat.has(b.dataset.c) ? qFilter.cat.delete(b.dataset.c) : qFilter.cat.add(b.dataset.c);
+    if (!qFilter.cat.size) qFilter.cat = new Set(CATS);
+    renderQuizSetup();
+  }));
+  $$('#q-type-chips .chip').forEach((b) => b.addEventListener('click', () => {
+    qFilter.type.has(b.dataset.t) ? qFilter.type.delete(b.dataset.t) : qFilter.type.add(b.dataset.t);
+    if (!qFilter.type.size) qFilter.type = new Set(Object.keys(TYPE_LABEL));
+    renderQuizSetup();
+  }));
+  $('#q-pool').textContent = `出題対象 ${poolQuestions().length}問`;
+}
+function poolQuestions() {
+  return QUIZ.filter((q) => qFilter.era.has(q.era) && qFilter.cat.has(q.cat) && qFilter.type.has(q.type));
+}
+
+$('#btn-quiz-start').addEventListener('click', startQuiz);
+function startQuiz() {
+  let pool = poolQuestions();
+  if (!pool.length) { toast('条件に合う問題がありません'); return; }
+  if ($('#q-weak').checked) {
+    pool = pool.slice().sort((a, b) => {
+      const sa = S.qstat[a.id] || { o: 0, x: 0 }, sb = S.qstat[b.id] || { o: 0, x: 0 };
+      return (sb.x - sb.o * 0.01) - (sa.x - sa.o * 0.01);
+    });
+  } else pool = shuffle(pool);
+  const n = Number($('#q-count').value) || pool.length;
+  session = { list: pool.slice(0, n), i: 0, correct: 0, log: [] };
+  $('#quiz-setup').classList.add('hidden');
+  $('#quiz-result').classList.add('hidden');
+  $('#quiz-play').classList.remove('hidden');
+  showQuestion();
+}
+$('#btn-quiz-quit').addEventListener('click', backToSetup);
+function backToSetup() {
+  session = null;
+  $('#quiz-play').classList.add('hidden');
+  $('#quiz-result').classList.add('hidden');
+  $('#quiz-setup').classList.remove('hidden');
+  renderQuizSetup();
+  window.scrollTo({ top: 0 });
+}
+
+function showQuestion() {
+  const q = session.list[session.i];
+  const e = eraById(q.era);
+  $('#q-progress').textContent = `第${session.i + 1}問 / 全${session.list.length}問　正解 ${session.correct}`;
+  $('#q-bar').style.width = (session.i / session.list.length * 100) + '%';
+  // 年代配列・組合せは選択肢の順序に意味があるためシャッフルしない
+  const canShuffle = S.set.shuffle && (q.type === 'sel' || q.type === 'src');
+  let idx = q.choices.map((_, i) => i);
+  if (canShuffle) idx = shuffle(idx);
+  session.cur = { q, idx, answered: false };
+
+  $('#q-area').innerHTML = `<div class="card">
+    <div class="q-meta">
+      <span class="q-tag era">${esc(e.name)}</span>
+      <span class="q-tag">${TYPE_LABEL[q.type]}</span>
+      <span class="q-tag">${esc(q.cat)}</span>
+      <span class="q-tag">${'★'.repeat(q.lv)}</span>
+    </div>
+    <div class="q-text">${nl2br(q.q)}</div>
+    ${q.src ? `<div class="q-src">${nl2br(q.src)}</div>` : ''}
+    <div class="choices">
+      ${idx.map((oi, n) => `<button class="choice" data-oi="${oi}">
+        <span class="num">${CIRCLED[n]}</span><span>${esc(q.choices[oi])}</span></button>`).join('')}
+    </div>
+    <div id="q-feedback"></div>
+  </div>`;
+  $('#btn-q-next').classList.add('hidden');
+  updateSaveBtn();
+  $$('#q-area .choice').forEach((b) => b.addEventListener('click', () => answer(Number(b.dataset.oi))));
+}
+
+function answer(oi) {
+  if (session.cur.answered) return;
+  session.cur.answered = true;
+  const q = session.cur.q;
+  const ok = oi === q.a;
+  if (ok) session.correct++;
+  session.log.push({ id: q.id, ok });
+
+  const st = S.qstat[q.id] || { o: 0, x: 0 };
+  st.o++; if (!ok) st.x++;
+  S.qstat[q.id] = st;
+  S.days[today()] = (S.days[today()] || 0) + 1;
+  const es = S.erastat[q.era] || { o: 0, c: 0 }; es.o++; if (ok) es.c++; S.erastat[q.era] = es;
+  const cs = S.catstat[q.cat] || { o: 0, c: 0 }; cs.o++; if (ok) cs.c++; S.catstat[q.cat] = cs;
+  save();
+
+  $$('#q-area .choice').forEach((b) => {
+    b.disabled = true;
+    const v = Number(b.dataset.oi);
+    if (v === q.a) b.classList.add('correct');
+    else if (v === oi) b.classList.add('wrong');
+  });
+  const pos = session.cur.idx.indexOf(q.a) + 1;
+  $('#q-feedback').innerHTML = `
+    <div class="verdict ${ok ? 'ok' : 'ng'}">${ok ? '◯ 正解' : '✕ 不正解'}　正解は ${CIRCLED[pos - 1]}</div>
+    <div class="exp"><div class="exp-h">解説</div>${esc(q.exp)}</div>`;
+  $('#btn-q-next').classList.remove('hidden');
+  $('#btn-q-next').textContent = session.i + 1 >= session.list.length ? '結果を見る →' : '次の問題 →';
+  $('#q-bar').style.width = ((session.i + 1) / session.list.length * 100) + '%';
+}
+
+$('#btn-q-next').addEventListener('click', () => {
+  session.i++;
+  if (session.i >= session.list.length) finishQuiz();
+  else { showQuestion(); window.scrollTo({ top: 0 }); }
+});
+
+function finishQuiz() {
+  const n = session.list.length, c = session.correct, p = pct(c, n);
+  S.sessions.push({ d: today(), n, c });
+  if (S.sessions.length > 300) S.sessions = S.sessions.slice(-300);
+  save();
+  const msg = p === 100 ? '満点です。文句なし！' : p >= 80 ? 'センター本番でも十分戦えるレベルです。' :
+    p >= 60 ? 'あと一歩。解説を読み直して穴を埋めましょう。' : '基本事項の確認から始めましょう。「詳細」を読み直すのがおすすめです。';
+  const wrong = session.log.filter((l) => !l.ok).map((l) => QUIZ.find((q) => q.id === l.id));
+
+  $('#quiz-play').classList.add('hidden');
+  $('#quiz-result').classList.remove('hidden');
+  $('#quiz-result').innerHTML = `
+    <div class="card"><div class="result-score">
+      <div class="rs-num">${c} / ${n}</div>
+      <div class="rs-sub">正答率 ${p}%</div>
+      <div class="rs-msg">${esc(msg)}</div>
+    </div></div>
+    ${wrong.length ? `<div class="card"><div class="sec-title">まちがえた問題</div>
+      ${wrong.map((q) => `<div class="item"><div class="item-h">${esc(eraById(q.era).name)}・${TYPE_LABEL[q.type]}</div>
+        <p class="item-b">${esc(q.q.split('\n')[0])}</p>
+        <div class="exp" style="margin-top:6px"><div class="exp-h">解説</div>${esc(q.exp)}</div></div>`).join('')}
+      </div>` : ''}
+    <div class="row"><button class="btn ghost" id="btn-res-back">← 設定へ</button><span class="spacer"></span>
+      <button class="btn primary" id="btn-res-again">同じ条件でもう一度</button></div>`;
+  $('#btn-res-back').addEventListener('click', backToSetup);
+  $('#btn-res-again').addEventListener('click', startQuiz);
+  window.scrollTo({ top: 0 });
+}
+
+$('#btn-q-save').addEventListener('click', () => {
+  if (!session || !session.cur) return;
+  const id = session.cur.q.id;
+  const i = S.savedQuiz.indexOf(id);
+  if (i >= 0) { S.savedQuiz.splice(i, 1); toast('保存を解除しました'); }
+  else { S.savedQuiz.push(id); toast('⭐ 問題を保存しました'); }
+  save(); updateSaveBtn();
+});
+function updateSaveBtn() {
+  if (!session || !session.cur) return;
+  const on = S.savedQuiz.includes(session.cur.q.id);
+  $('#btn-q-save').textContent = on ? '★ 保存ずみ' : '⭐ この問題を保存';
+}
+
+/* ========== 記録 ========== */
+function renderStats() {
+  const totO = Object.values(S.qstat).reduce((a, v) => a + v.o, 0);
+  const totX = Object.values(S.qstat).reduce((a, v) => a + v.x, 0);
+  const totC = totO - totX;
+  const readN = Object.keys(S.read).length;
+  const days = Object.keys(S.days || {}).length;
+  $('#stat-tiles').innerHTML = `
+    <div class="tile"><div class="tv">${totO}</div><div class="tk">解いた問題</div></div>
+    <div class="tile"><div class="tv">${pct(totC, totO)}%</div><div class="tk">通算正答率</div></div>
+    <div class="tile"><div class="tv">${readN}/${ERAS.length}</div><div class="tk">読んだ時代</div></div>
+    <div class="tile"><div class="tv">${days}</div><div class="tk">学習した日数</div></div>`;
+
+  $('#stat-era').innerHTML = ERAS.map((e) => {
+    const s = S.erastat[e.id] || { o: 0, c: 0 };
+    const p = pct(s.c, s.o);
+    return `<div class="bar-row"><div class="bl">${esc(e.name)}</div>
+      <div class="bar-track"><div style="width:${p}%;background:${e.color}"></div></div>
+      <div class="bn">${s.o ? p + '%' : '—'}</div></div>`;
+  }).join('');
+
+  $('#stat-cat').innerHTML = CATS.map((c) => {
+    const s = S.catstat[c] || { o: 0, c: 0 };
+    const p = pct(s.c, s.o);
+    return `<div class="bar-row"><div class="bl">${c}</div>
+      <div class="bar-track"><div style="width:${p}%"></div></div>
+      <div class="bn">${s.o ? p + '%' : '—'}</div></div>`;
+  }).join('');
+
+  $('#stat-read').innerHTML = ERAS.map((e) => `<span class="read-pill ${S.read[e.id] ? 'on' : ''}">${esc(e.name)}</span>`).join('');
+
+  const weak = Object.entries(S.qstat).filter(([, v]) => v.x > 0)
+    .sort((a, b) => b[1].x - a[1].x).slice(0, 10)
+    .map(([id, v]) => ({ q: QUIZ.find((x) => x.id === id), v })).filter((x) => x.q);
+  $('#stat-weak').innerHTML = weak.length ? weak.map((w) => `
+    <li data-era="${w.q.era}"><span class="miss">${w.v.x}回ミス</span>
+    <span>${esc(w.q.q.split('\n')[0].slice(0, 48))}…</span></li>`).join('')
+    : '<div class="empty">まちがえた問題はまだありません</div>';
+  $$('#stat-weak li').forEach((li) => li.addEventListener('click', () => gotoEra(li.dataset.era, 'detail')));
+}
+
+$('#btn-reset-stats').addEventListener('click', () => {
+  if (!confirm('学習記録（正答率・読了・まちがえた問題）をすべて消去します。よろしいですか？\n※保存した用語・問題は残ります。')) return;
+  S.read = {}; S.qstat = {}; S.erastat = {}; S.catstat = {}; S.sessions = []; S.days = {};
+  save(); renderStats(); renderEraGrid(); toast('学習記録をリセットしました');
+});
+
+/* ========== 保存 ========== */
+let savedTab = 'word';
+$$('.savedtab').forEach((b) => b.addEventListener('click', () => {
+  savedTab = b.dataset.sv;
+  $$('.savedtab').forEach((x) => x.classList.toggle('active', x === b));
+  renderSaved();
+}));
+function renderSaved() {
+  const box = $('#saved-area');
+  if (savedTab === 'word') {
+    if (!S.savedWords.length) { box.innerHTML = '<div class="empty">用語の ☆ を押すとここに保存されます</div>'; return; }
+    box.innerHTML = `<div class="card"><div class="kw-list">${S.savedWords.map((w) => {
+      const e = eraById(w.era) || ERAS[0];
+      return kwHTML(w, e, true);
+    }).join('')}</div></div>`;
+    bindStars(box);
+    $$('.star', box).forEach((b) => b.addEventListener('click', () => setTimeout(renderSaved, 0)));
+  } else {
+    const list = S.savedQuiz.map((id) => QUIZ.find((q) => q.id === id)).filter(Boolean);
+    if (!list.length) { box.innerHTML = '<div class="empty">クイズ中に「⭐ この問題を保存」を押すとここに入ります</div>'; return; }
+    box.innerHTML = list.map((q) => `<div class="card">
+      <div class="q-meta"><span class="q-tag era">${esc(eraById(q.era).name)}</span>
+        <span class="q-tag">${TYPE_LABEL[q.type]}</span><span class="q-tag">${esc(q.cat)}</span></div>
+      <div class="q-text">${nl2br(q.q)}</div>
+      ${q.src ? `<div class="q-src">${nl2br(q.src)}</div>` : ''}
+      <div class="choices">${q.choices.map((c, i) => `<div class="choice ${i === q.a ? 'correct' : ''}">
+        <span class="num">${CIRCLED[i]}</span><span>${esc(c)}</span></div>`).join('')}</div>
+      <div class="exp" style="margin-top:12px"><div class="exp-h">解説</div>${esc(q.exp)}</div>
+      <div class="row"><span class="spacer"></span>
+        <button class="btn ghost" data-del="${q.id}">保存を解除</button></div></div>`).join('');
+    $$('[data-del]', box).forEach((b) => b.addEventListener('click', () => {
+      S.savedQuiz = S.savedQuiz.filter((x) => x !== b.dataset.del);
+      save(); renderSaved(); toast('保存を解除しました');
+    }));
+  }
+}
+
+/* ========== 検索 ========== */
+const INDEX = [];
+ERAS.forEach((e) => {
+  e.keywords.forEach((k) => INDEX.push({ w: k.w, y: k.y, d: k.d, era: e, kind: KINDS.word, sub: 'words' }));
+  e.people.forEach((p) => INDEX.push({ w: p.n, y: p.y, d: p.d, era: e, kind: KINDS.person, sub: 'words' }));
+  e.events.forEach((v) => INDEX.push({ w: v.t, y: v.y, d: v.d, era: e, kind: KINDS.event, sub: 'chrono' }));
+  e.topics.forEach((t) => INDEX.push({ w: t.t, y: '', d: t.lead, era: e, kind: 'トピック', sub: 'topic' }));
+  e.sections.forEach((s) => s.items.forEach((i) => INDEX.push({ w: i.h, y: '', d: i.b, era: e, kind: '詳細', sub: 'detail' })));
+});
+
+const sdDlg = $('#search-dialog');
+$('#btn-search').addEventListener('click', () => { sdDlg.showModal(); $('#sd-input').focus(); });
+$('#sd-close').addEventListener('click', () => sdDlg.close());
+$('#sd-input').addEventListener('input', () => {
+  const q = $('#sd-input').value.trim();
+  const box = $('#sd-results');
+  if (!q) { box.innerHTML = `<div class="empty">${KIND_HINT}を入力してください</div>`; return; }
+  const hits = INDEX.filter((x) => (x.w + x.y + x.d).includes(q)).slice(0, 40);
+  box.innerHTML = hits.length ? hits.map((h, i) => `<div class="sd-item" data-i="${i}">
+    <div class="sd-w">${esc(h.w)}</div>
+    <div class="sd-meta">${esc(h.era.name)}・${h.kind}${h.y ? '・' + esc(h.y) : ''}</div>
+    <div class="sd-d">${esc(h.d.slice(0, 80))}${h.d.length > 80 ? '…' : ''}</div></div>`).join('')
+    : '<div class="empty">見つかりませんでした</div>';
+  $$('.sd-item', box).forEach((el) => el.addEventListener('click', () => {
+    const h = hits[Number(el.dataset.i)];
+    sdDlg.close();
+    gotoEra(h.era.id, h.sub);
+  }));
+});
+
+/* ========== 設定 ========== */
+const setDlg = $('#settings-dialog');
+$('#btn-settings').addEventListener('click', () => setDlg.showModal());
+function applySettings() {
+  document.documentElement.style.setProperty('--fs', S.set.fontsize + 'px');
+  document.documentElement.setAttribute('data-theme', S.set.theme);
+  $('#set-furigana').checked = S.set.furigana;
+  $('#set-shuffle').checked = S.set.shuffle;
+  $('#set-fontsize').value = String(S.set.fontsize);
+  $('#set-theme').value = S.set.theme;
+}
+$('#set-furigana').addEventListener('change', (e) => { S.set.furigana = e.target.checked; save(); if (curEra) renderEraBody(); });
+$('#set-shuffle').addEventListener('change', (e) => { S.set.shuffle = e.target.checked; save(); });
+$('#set-fontsize').addEventListener('change', (e) => { S.set.fontsize = Number(e.target.value); save(); applySettings(); });
+$('#set-theme').addEventListener('change', (e) => { S.set.theme = e.target.value; save(); applySettings(); });
+
+/* ========== 起動 ========== */
+applySettings();
+renderEraGrid();
+renderTlChips();
+renderTimeline();
+renderThemes();
+renderTopicChips();
+renderTopics();
+renderQuizSetup();
+
+if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
+  navigator.serviceWorker.register('sw.js').catch(() => {});
+}
