@@ -4,12 +4,17 @@
 import os, sys, re, json
 
 SP = os.path.dirname(os.path.abspath(__file__))
-ROOT = os.environ.get('GEN_ROOT', '/Users/seki/Desktop/アプリ開発/seki/TOOL/学習アプリ/理科')
+# 学習アプリ のルート。スクリプトの位置から求めるので、フォルダごと動かしても壊れない。
+BASE = os.environ.get('GEN_BASE') or os.path.dirname(os.path.dirname(SP))
+
+def outdir(c):
+    """出力先は <学習アプリ>/<教科>/<分野>。apps.json の subject で教科が決まる。"""
+    return os.path.join(BASE, c['subject'], c['dir'])
 
 def read(p): return open(p, encoding='utf-8').read()
 def write(p, s):
     open(p, 'w', encoding='utf-8').write(s)
-    print('  ->', os.path.relpath(p, ROOT))
+    print('  ->', os.path.relpath(p, BASE))
 
 # ---------- app.js（全教科で共通。ラベルは APP から読む） ----------
 def build_app():
@@ -245,7 +250,7 @@ def build_launch(c):
         ensure_ascii=False, indent=2) + '\n'
 
 def gen(c):
-    d = os.path.join(ROOT, c['dir'])
+    d = outdir(c)
     print('  出力先:', d)
     os.makedirs(os.path.join(d, '.claude'), exist_ok=True)
     print(c['dir'] + ':')
@@ -261,5 +266,13 @@ def gen(c):
 
 if __name__ == '__main__':
     conf = json.load(open(os.path.join(SP, 'apps.json'), encoding='utf-8'))
-    for c in conf:
+    # 引数で分野を指定できる（例: python gen.py 倫理）。無指定なら全分野。
+    want = set(sys.argv[1:])
+    unknown = want - {c['dir'] for c in conf}
+    if unknown:
+        sys.exit('apps.json にない分野: ' + '、'.join(sorted(unknown)))
+    targets = [c for c in conf if not want or c['dir'] in want]
+    print('ルート:', BASE)
+    for c in targets:
         gen(c)
+    print('生成した分野:', '、'.join(c['subject'] + '/' + c['dir'] for c in targets))

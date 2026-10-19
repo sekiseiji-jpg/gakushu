@@ -1,0 +1,30 @@
+{
+  "name": "倫理マスター",
+  "short_name": "倫理",
+  "description": "高校倫理を源流思想・日本思想・西洋近現代思想・現代の課題の概要・詳細・年表・トピック・共通テスト形式のクイズで学べるアプリ",
+  "lang": "ja",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#faf8f3",
+  "theme_color": "#8a6230",
+  "icons": [
+    {
+      "src": "icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    },
+    {
+      "src": "icon-maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}

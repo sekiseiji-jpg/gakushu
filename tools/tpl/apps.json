@@ -1,6 +1,7 @@
 [
   {
     "dir": "物理",
+    "subject": "理科",
     "slug": "butsuri",
     "port": 8772,
     "title": "物理マスター",
@@ -45,6 +46,7 @@
   },
   {
     "dir": "化学",
+    "subject": "理科",
     "slug": "kagaku",
     "port": 8773,
     "title": "化学マスター",
@@ -89,6 +91,7 @@
   },
   {
     "dir": "生物",
+    "subject": "理科",
     "slug": "seibutsu",
     "port": 8774,
     "title": "生物マスター",
@@ -133,6 +136,7 @@
   },
   {
     "dir": "地学",
+    "subject": "理科",
     "slug": "chigaku",
     "port": 8775,
     "title": "地学マスター",
@@ -173,6 +177,51 @@
       "word": "用語",
       "person": "区別",
       "event": "データ"
+    }
+  },
+  {
+    "dir": "倫理",
+    "subject": "社会",
+    "slug": "rinri",
+    "port": 8776,
+    "title": "倫理マスター",
+    "short": "倫理",
+    "icon": "💭",
+    "desc": "高校倫理を源流思想・日本思想・西洋近現代思想・現代の課題の概要・詳細・年表・トピック・共通テスト形式のクイズで学べるアプリ",
+    "unit": "単元",
+    "list": "年表",
+    "wordsTab": "用語・人物",
+    "leadUnits": "単元を選ぶと、概要・詳細・重要用語・思想家・年表・トピックが読めます。",
+    "leadThemes": "単元をまたいで眺めると、人間をどうとらえてきたかの流れが見えてきます。",
+    "leadTopics": "「なぜそう考えたのか」を掘り下げた読み物です。論述や考察問題の土台になります。",
+    "searchPlaceholder": "🔍 年表を検索（例：イデア、無常、自由）",
+    "font": "\"Hiragino Mincho ProN\", \"Yu Mincho\", \"YuMincho\", \"Noto Serif JP\", \"Segoe UI\", serif",
+    "bg": "#faf8f3",
+    "surface2": "#fdfbf7",
+    "border": "#e8e0d2",
+    "text": "#262018",
+    "muted": "#6f6556",
+    "color": "#8a6230",
+    "soft": "#f3e7d6",
+    "accent": "#4a6b8a",
+    "dbg": "#16130e",
+    "dsurface": "#211c15",
+    "dsurface2": "#1b1711",
+    "dborder": "#383026",
+    "dtext": "#241803",
+    "dtextfg": "#ece5d9",
+    "dmuted": "#a49886",
+    "dcolor": "#d2a263",
+    "dsoft": "#3a2c18",
+    "dheader": "#3f2d14",
+    "dheaderfg": "#f6ead9",
+    "daccent": "#7fa0bd",
+    "listIcon": "🗓️",
+    "themeWord": "テーマ史",
+    "kinds": {
+      "word": "用語",
+      "person": "人物",
+      "event": "できごと"
     }
   }
 ]

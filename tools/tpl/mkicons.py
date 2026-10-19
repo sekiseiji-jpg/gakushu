@@ -1,9 +1,13 @@
 from PIL import Image, ImageDraw, ImageFont
-import os, math
-ROOT='/Users/seki/Desktop/アプリ開発/seki/TOOL/学習アプリ/理科'
+import os, sys, math, json
+# 出力先はスクリプトの位置から求める（フォルダごと動かしても壊れない）。
+# 分野ごとの出力先と背景色は apps.json を正とする。
+SP = os.path.dirname(os.path.abspath(__file__))
+BASE = os.environ.get('GEN_BASE') or os.path.dirname(os.path.dirname(SP))
 FG=(247,247,245)
 def font(sz):
-    for p in ["/System/Library/Fonts/ヒラギノ角ゴシック W6.ttc","/System/Library/Fonts/Hiragino Sans GB.ttc","/Library/Fonts/Arial Unicode.ttf"]:
+    for p in ["/System/Library/Fonts/ヒラギノ角ゴシック W6.ttc","/System/Library/Fonts/Hiragino Sans GB.ttc","/Library/Fonts/Arial Unicode.ttf",
+              r"C:\Windows\Fonts\YuGothB.ttc", r"C:\Windows\Fonts\meiryob.ttc", r"C:\Windows\Fonts\msgothic.ttc"]:
         if os.path.exists(p):
             try: return ImageFont.truetype(p, sz)
             except Exception: pass
@@ -60,23 +64,36 @@ def earth(d, cx, cy, r, t):
     d.line([vx+int(r*0.30), vy, vx+int(r*0.08), vy-int(r*0.34)], fill=FG, width=t)
     d.line([vx-int(r*0.08), vy-int(r*0.34), vx+int(r*0.08), vy-int(r*0.34)], fill=FG, width=t)
 
-SHAPES={'物理':atom, '化学':flask, '生物':dna, '地学':earth}
-LABEL={'物理':'物理', '化学':'化学', '生物':'生物', '地学':'地学'}
-BG={'物理':(42,75,141), '化学':(194,86,26), '生物':(47,125,58), '地学':(138,90,43)}
+def enso(d, cx, cy, r, t):
+    # 円相（一筆書きの輪）と中心の点。思索をあらわす。
+    d.arc([cx-r, cy-r, cx+r, cy+r], 128, 68, fill=FG, width=t)
+    d.ellipse([cx-int(r*0.17), cy-int(r*0.17), cx+int(r*0.17), cy+int(r*0.17)], fill=FG)
 
-def make(name, size, path, maskable=False):
-    img=Image.new("RGB",(size,size),BG[name]); d=ImageDraw.Draw(img); d._image=img
+SHAPES={'物理':atom, '化学':flask, '生物':dna, '地学':earth, '倫理':enso}
+
+def hex2rgb(h):
+    h=h.lstrip('#'); return tuple(int(h[i:i+2],16) for i in (0,2,4))
+
+def make(name, bg, size, path, maskable=False):
+    img=Image.new("RGB",(size,size),bg); d=ImageDraw.Draw(img); d._image=img
     pad=int(size*0.24) if maskable else int(size*0.15)
     inner=size-pad*2
     t=max(2,int(inner*0.062))
     SHAPES[name](d, size//2, int(size*0.40), int(inner*0.33), t)
-    f=font(int(inner*0.24)); txt=LABEL[name]
+    f=font(int(inner*0.24)); txt=name
     bb=d.textbbox((0,0),txt,font=f)
     d.text(((size-(bb[2]-bb[0]))//2-bb[0], int(size*0.70)), txt, font=f, fill=FG)
     img.save(path)
 
-for name in SHAPES:
-    out=os.path.join(ROOT,name)
-    for sz, fn, mk in ((192,'icon-192.png',False),(512,'icon-512.png',False),(512,'icon-maskable-512.png',True),(180,'apple-touch-icon.png',False)):
-        make(name, sz, os.path.join(out, fn), mk)
-    print('icons:', name)
+if __name__ == '__main__':
+    conf=json.load(open(os.path.join(SP,'apps.json'), encoding='utf-8'))
+    want=set(sys.argv[1:])     # 例: python mkicons.py 倫理 （無指定なら全分野）
+    unknown=want-{c['dir'] for c in conf}
+    if unknown: sys.exit('apps.json にない分野: ' + '、'.join(sorted(unknown)))
+    for c in conf:
+        if want and c['dir'] not in want: continue
+        if c['dir'] not in SHAPES: sys.exit('図形が未定義の分野: ' + c['dir'])
+        out=os.path.join(BASE, c['subject'], c['dir'])
+        for sz, fn, mk in ((192,'icon-192.png',False),(512,'icon-512.png',False),(512,'icon-maskable-512.png',True),(180,'apple-touch-icon.png',False)):
+            make(c['dir'], hex2rgb(c['color']), sz, os.path.join(out, fn), mk)
+        print('icons:', os.path.relpath(out, BASE))
