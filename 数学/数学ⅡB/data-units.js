@@ -10,7 +10,7 @@ const APP = {
   listWord: '公式',
   leadUnits: '単元を選ぶと、概要・詳細・重要用語・公式・トピックが読めます。',
   searchPlaceholder: '🔍 公式を検索（例：加法定理、等差数列、接線）',
-  cats: ['式と方程式', '関数', '微分積分', '数列・統計'],
+  cats: ['式と方程式', '関数', '微分積分', '数列・ベクトル・統計'],
   wordsHeads: ['重要用語', 'まちがえやすい区別'],
   kinds: { word: '用語', person: '区別', event: '公式' },
   typeLabels: { sel: '正誤判定', cmb: '組合せ', ord: '大小配列', src: '計算・資料' },
