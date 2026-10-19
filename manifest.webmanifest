@@ -1,0 +1,17 @@
+{
+  "name": "学習アプリ",
+  "short_name": "学習アプリ",
+  "description": "高校の学習アプリをまとめたポータル。教科と分野を選んで学習できます。",
+  "lang": "ja",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#f5f6f9",
+  "theme_color": "#3b4d7a",
+  "icons": [
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}

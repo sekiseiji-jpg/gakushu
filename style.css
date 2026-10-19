@@ -1,0 +1,77 @@
+/* 学習アプリ ポータル 共通スタイル */
+:root {
+  --bg: #f5f6f9;
+  --surface: #ffffff;
+  --text: #1f2430;
+  --muted: #666f80;
+  --border: #e0e4ec;
+  --accent: #3b4d7a;
+  --accent-fg: #ffffff;
+  --shadow: 0 1px 2px rgba(30,40,60,.06), 0 6px 20px rgba(30,40,60,.07);
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #12141a; --surface: #1c1f27; --text: #e8eaf0; --muted: #9aa3b4;
+    --border: #2e333e; --accent: #8fa6d8; --accent-fg: #141720;
+    --shadow: 0 1px 2px rgba(0,0,0,.3), 0 6px 20px rgba(0,0,0,.25);
+  }
+}
+* { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body {
+  margin: 0;
+  font-family: "Hiragino Sans", "Yu Gothic UI", "YuGothic", "Noto Sans JP", "Segoe UI", sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  line-height: 1.8;
+  min-height: 100vh;
+}
+.wrap { max-width: 860px; margin: 0 auto; padding: 32px 18px 72px; }
+
+.site-head { text-align: center; margin-bottom: 30px; }
+.site-head .logo { font-size: 2.6rem; line-height: 1; }
+.site-head h1 { font-size: 1.6rem; margin: 10px 0 4px; letter-spacing: .08em; }
+.site-head p { color: var(--muted); font-size: .92rem; margin: 0; }
+
+.crumb { font-size: .86rem; color: var(--muted); margin-bottom: 18px; }
+.crumb a { color: var(--accent); text-decoration: none; }
+.crumb a:hover { text-decoration: underline; }
+
+.grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 14px; }
+
+.card {
+  display: block; text-decoration: none; color: inherit; position: relative;
+  background: var(--surface); border: 1px solid var(--border);
+  border-left: 6px solid var(--c, var(--accent));
+  border-radius: 14px; padding: 18px 20px; box-shadow: var(--shadow);
+  transition: transform .14s ease, border-color .14s ease;
+}
+.card:hover { transform: translateY(-3px); border-color: var(--c, var(--accent)); border-left-color: var(--c, var(--accent)); }
+.card .icon { font-size: 1.9rem; line-height: 1; }
+.card h2 { font-size: 1.18rem; margin: 8px 0 2px; }
+.card .sub { font-size: .8rem; color: var(--muted); letter-spacing: .03em; }
+.card .desc { font-size: .88rem; color: var(--muted); margin-top: 8px; }
+.card .meta { font-size: .78rem; color: var(--c, var(--accent)); margin-top: 10px; font-weight: 700; }
+
+.card.soon { opacity: .5; pointer-events: none; }
+.card.soon::after {
+  content: '準備中'; position: absolute; top: 14px; right: 16px;
+  font-size: .72rem; color: var(--muted); border: 1px solid var(--border);
+  border-radius: 999px; padding: 1px 9px;
+}
+
+.note {
+  margin-top: 28px; background: var(--surface); border: 1px solid var(--border);
+  border-radius: 12px; padding: 14px 18px; font-size: .86rem; color: var(--muted);
+}
+.note b { color: var(--text); }
+.note ul { margin: 8px 0 0; padding-left: 1.2em; }
+.note li { margin-bottom: 3px; }
+
+.foot { text-align: center; color: var(--muted); font-size: .78rem; margin-top: 34px; }
+
+@media (max-width: 480px) {
+  .wrap { padding: 24px 14px 60px; }
+  .grid { grid-template-columns: 1fr; }
+  .site-head h1 { font-size: 1.35rem; }
+}

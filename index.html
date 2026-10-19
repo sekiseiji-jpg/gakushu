@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#3b4d7a">
+<meta name="description" content="高校の学習アプリをまとめたポータル。教科を選んで学習を始められます。">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="学習アプリ">
+<title>学習アプリ</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon-192.png" type="image/png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="stylesheet" href="style.css?v=2">
+</head>
+<body>
+<div class="wrap">
+  <header class="site-head">
+    <div class="logo">📚</div>
+    <h1>学習アプリ</h1>
+    <p>教科を選んでください</p>
+  </header>
+
+  <div class="grid">
+    <a class="card" style="--c:#9b2d20" href="社会/">
+      <div class="icon">🏛️</div>
+      <h2>社会</h2>
+      <div class="sub">日本史・世界史・地理・政治・経済</div>
+      <div class="desc">時代や分野の解説を読み、大学入試センター試験形式のクイズで確認できます。</div>
+      <div class="meta">4分野 ／ 全743問</div>
+    </a>
+
+    <a class="card" style="--c:#2a6b4f" href="理科/">
+      <div class="icon">🔬</div>
+      <h2>理科</h2>
+      <div class="sub">物理・化学・生物・地学</div>
+      <div class="desc">単元の解説を読み、大学入試センター試験形式のクイズで確認できます。</div>
+      <div class="meta">4分野 ／ 全732問</div>
+    </a>
+
+    <div class="card soon" style="--c:#0277bd">
+      <div class="icon">📐</div>
+      <h2>数学</h2>
+      <div class="sub">数学Ⅰ・A・Ⅱ・B・Ⅲ・C</div>
+      <div class="desc">準備中です。</div>
+    </div>
+
+    <div class="card soon" style="--c:#8e24aa">
+      <div class="icon">📖</div>
+      <h2>国語</h2>
+      <div class="sub">現代文・古文・漢文</div>
+      <div class="desc">準備中です。</div>
+    </div>
+  </div>
+
+  <div class="note">
+    <b>使い方</b>
+    <ul>
+      <li>各アプリは完全にオフラインで動きます。ブラウザの「ホーム画面に追加」でアプリとして使えます。</li>
+      <li>学習記録はお使いの端末のブラウザ内にのみ保存されます（外部への送信はありません）。</li>
+    </ul>
+  </div>
+
+  <p class="foot">学習アプリ ポータル</p>
+</div>
+<script>
+  if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
+    navigator.serviceWorker.register('sw.js').catch(function () {});
+  }
+</script>
+</body>
+</html>
