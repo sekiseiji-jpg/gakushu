@@ -148,7 +148,7 @@ function renderEraBody() {
   } else if (curSub === 'eq') {
     const list = QUIZ.filter((q) => q.era === curEra);
     box.innerHTML = `<div class="card">
-      <p>この時代の問題は <b>${list.length}問</b> あります。センター試験形式（正誤判定・組合せ・年代配列・史料）で出題します。</p>
+      <p>この時代の問題は <b>${list.length}問</b> あります。共通テスト形式（正誤判定・組合せ・年代配列・史料）で出題します。</p>
       <div class="row"><span class="spacer"></span><button class="btn primary" id="btn-era-quiz">▶ この時代のクイズを解く</button></div></div>`;
     $('#btn-era-quiz').addEventListener('click', () => {
       qFilter.era = new Set([curEra]); qFilter.cat = new Set(CATS); qFilter.type = new Set(Object.keys(TYPE_LABEL));
@@ -391,7 +391,7 @@ function finishQuiz() {
   S.sessions.push({ d: today(), n, c });
   if (S.sessions.length > 300) S.sessions = S.sessions.slice(-300);
   save();
-  const msg = p === 100 ? '満点です。文句なし！' : p >= 80 ? 'センター本番でも十分戦えるレベルです。' :
+  const msg = p === 100 ? '満点です。文句なし！' : p >= 80 ? '共通テスト本番でも十分戦えるレベルです。' :
     p >= 60 ? 'あと一歩。解説を読み直して穴を埋めましょう。' : '基本事項の確認から始めましょう。「詳細」を読み直すのがおすすめです。';
   const wrong = session.log.filter((l) => !l.ok).map((l) => QUIZ.find((q) => q.id === l.id));
 

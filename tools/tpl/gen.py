@@ -26,8 +26,8 @@ def build_app():
         ('この時代のおもなできごと', 'この${U}のおもな${L === \'年表\' ? \'できごと\' : \'ポイント\'}'),
         ('年表をすべて見る →', '${L}をすべて見る →'),
         ('<p>この時代の問題は', '<p>この${U}の問題は'),
-        ('センター試験形式（正誤判定・組合せ・年代配列・史料）で出題します。',
-         'センター試験形式（${Object.values(TYPE_LABEL).join(\'・\')}）で出題します。'),
+        ('共通テスト形式（正誤判定・組合せ・年代配列・史料）で出題します。',
+         '共通テスト形式（${Object.values(TYPE_LABEL).join(\'・\')}）で出題します。'),
         ('▶ この時代のクイズを解く', '▶ この${U}のクイズを解く'),
         ("'<div class=\"empty\">該当する年表項目がありません</div>'", "`<div class=\"empty\">該当する${L}の項目がありません</div>`"),
         ('data-all="1">すべての時代<', 'data-all="1">すべての${U}<'),
@@ -63,7 +63,7 @@ def build_index(c):
     s = read(os.path.join(SP, 'index.base.html'))
     reps = [
         ('<meta name="theme-color" content="#9b2d20">', '<meta name="theme-color" content="%s">' % c['color']),
-        ('<meta name="description" content="高校日本史を時代の概要・詳細・トピック・年表・センター試験形式のクイズで学べるアプリ">',
+        ('<meta name="description" content="高校日本史を時代の概要・詳細・トピック・年表・共通テスト形式のクイズで学べるアプリ">',
          '<meta name="description" content="%s">' % c['desc']),
         ('<meta name="apple-mobile-web-app-title" content="日本史マスター">',
          '<meta name="apple-mobile-web-app-title" content="%s">' % c['short']),
