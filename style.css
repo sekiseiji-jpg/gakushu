@@ -75,3 +75,50 @@ body {
   .grid { grid-template-columns: 1fr; }
   .site-head h1 { font-size: 1.35rem; }
 }
+
+/* ===== ポータルの検索 ===== */
+.ps-box {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  box-shadow: var(--shadow);
+  padding: 14px 16px;
+  margin-bottom: 22px;
+}
+.ps-box input {
+  width: 100%;
+  font: inherit;
+  font-size: 1rem;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--bg);
+  color: var(--text);
+}
+.ps-box input:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
+.ps-hint { color: var(--muted); font-size: .86rem; margin: 12px 2px 2px; }
+.ps-group { margin-top: 14px; }
+.ps-gh {
+  font-size: .78rem; color: var(--muted); letter-spacing: .08em;
+  border-bottom: 1px solid var(--border); padding-bottom: 4px; margin-bottom: 4px;
+}
+.ps-item {
+  display: flex; gap: 10px; align-items: flex-start;
+  padding: 9px 6px; border-radius: 8px;
+  color: inherit; text-decoration: none;
+}
+.ps-item:hover { background: var(--bg); }
+.ps-ic { font-size: 1.2rem; line-height: 1.4; flex: none; }
+.ps-main { display: flex; flex-direction: column; min-width: 0; }
+.ps-t { font-weight: 600; font-size: .98rem; }
+.ps-sub { color: var(--muted); font-size: .78rem; }
+.ps-c {
+  color: var(--muted); font-size: .82rem; margin-top: 2px;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.ps-item mark { background: color-mix(in srgb, var(--accent) 24%, transparent); color: inherit; border-radius: 3px; }
+#ps-results { max-height: 58vh; overflow-y: auto; }
+@media (max-width: 480px) {
+  .ps-c { white-space: normal; }
+  #ps-results { max-height: none; }
+}

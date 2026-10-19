@@ -12,15 +12,20 @@
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
-<link rel="stylesheet" href="style.css?v=4">
+<link rel="stylesheet" href="style.css?v=5">
 </head>
-<body>
+<body data-base="">
 <div class="wrap">
   <header class="site-head">
     <div class="logo">📚</div>
     <h1>学習アプリ</h1>
     <p>教科を選んでください</p>
   </header>
+
+  <div class="ps-box">
+    <input id="ps-input" type="search" placeholder="🔍 教科・分野・単元・用語をまとめて検索" autocomplete="off" aria-label="検索">
+    <div id="ps-results"></div>
+  </div>
 
   <div class="grid">
     <a class="card" style="--c:#9b2d20" href="社会/">
@@ -69,5 +74,7 @@
     navigator.serviceWorker.register('sw.js').catch(function () {});
   }
 </script>
+<script src="search-index.js?v=5"></script>
+<script src="search.js?v=5"></script>
 </body>
 </html>

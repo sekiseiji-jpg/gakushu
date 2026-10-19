@@ -592,3 +592,18 @@ renderQuizSetup();
 if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
   navigator.serviceWorker.register('sw.js').catch(() => {});
 }
+
+/* ========== ポータルの検索から単元を直接開く ========== */
+// 例: .../index.html#u=girisha      単元を開く
+//     .../index.html#u=girisha&s=detail  サブタブも指定する
+function openFromHash() {
+  const m = /[#&]u=([^&]+)/.exec(location.hash);
+  if (!m) return;
+  const list = (typeof UNITS !== 'undefined') ? UNITS : ERAS;
+  const id = decodeURIComponent(m[1]);
+  if (!list.some((e) => e.id === id)) return;
+  const sm = /[#&]s=([^&]+)/.exec(location.hash);
+  gotoEra(id, sm ? decodeURIComponent(sm[1]) : 'summary');
+}
+window.addEventListener('hashchange', openFromHash);
+openFromHash();

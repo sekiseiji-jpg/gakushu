@@ -11,9 +11,9 @@
 <title>理科 ｜ 学習アプリ</title>
 <link rel="icon" href="../icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="../apple-touch-icon.png">
-<link rel="stylesheet" href="../style.css?v=3">
+<link rel="stylesheet" href="../style.css?v=4">
 </head>
-<body>
+<body data-subject="理科" data-base="../">
 <div class="wrap">
   <nav class="crumb"><a href="../">📚 学習アプリ</a> ／ 理科</nav>
 
@@ -22,6 +22,11 @@
     <h1>理科</h1>
     <p>分野を選んでください</p>
   </header>
+
+  <div class="ps-box">
+    <input id="ps-input" type="search" placeholder="🔍 理科の分野・単元・用語を検索" autocomplete="off" aria-label="検索">
+    <div id="ps-results"></div>
+  </div>
 
   <div class="grid">
     <a class="card" style="--c:#2a4b8d" href="物理/">
@@ -68,5 +73,7 @@
 
   <p class="foot">学習アプリ ／ 理科</p>
 </div>
+<script src="../search-index.js?v=4"></script>
+<script src="../search.js?v=4"></script>
 </body>
 </html>

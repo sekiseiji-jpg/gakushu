@@ -11,9 +11,9 @@
 <title>社会 ｜ 学習アプリ</title>
 <link rel="icon" href="../icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="../apple-touch-icon.png">
-<link rel="stylesheet" href="../style.css?v=4">
+<link rel="stylesheet" href="../style.css?v=5">
 </head>
-<body>
+<body data-subject="社会" data-base="../">
 <div class="wrap">
   <nav class="crumb"><a href="../">📚 学習アプリ</a> ／ 社会</nav>
 
@@ -22,6 +22,11 @@
     <h1>社会</h1>
     <p>分野を選んでください</p>
   </header>
+
+  <div class="ps-box">
+    <input id="ps-input" type="search" placeholder="🔍 社会の分野・単元・用語を検索" autocomplete="off" aria-label="検索">
+    <div id="ps-results"></div>
+  </div>
 
   <div class="grid">
     <a class="card" style="--c:#9b2d20" href="日本史/">
@@ -76,5 +81,7 @@
 
   <p class="foot">学習アプリ ／ 社会</p>
 </div>
+<script src="../search-index.js?v=5"></script>
+<script src="../search.js?v=5"></script>
 </body>
 </html>
