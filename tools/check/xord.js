@@ -1,5 +1,5 @@
 // ord（配列）の解説と正解を突き合わせる。
-// 使い方: node tools/check/xord.js [分野フォルダ...]   （省略すると全18分野）
+// 使い方: node tools/check/xord.js [分野フォルダ...]   （省略すると全19分野）
 const { load, label, dirsFromArgs } = require('./lib.js');
 
 const dirs = dirsFromArgs(process.argv.slice(2));

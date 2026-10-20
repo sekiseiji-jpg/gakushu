@@ -1,6 +1,6 @@
 // cmb（組合せ）の解説と正解を突き合わせる。
 // 一括置換で正解の位置だけ動かすと、解説の記号（a・b …）が置き換わらずに残ることがある。
-// 使い方: node tools/check/xref.js [分野フォルダ...]   （省略すると全18分野）
+// 使い方: node tools/check/xref.js [分野フォルダ...]   （省略すると全19分野）
 const { load, label, dirsFromArgs } = require('./lib.js');
 
 const dirs = dirsFromArgs(process.argv.slice(2));
