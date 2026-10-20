@@ -96,7 +96,8 @@ function check(rel) {
         bytes += fs.statSync(p).size;
         if (kb > MAXKB) say(`${at}: 写真が大きい（${Math.round(kb)}KB）`);
         if (!f.credit) say(`${at}: 写真の出どころがない`);
-        else if (!/（(Public domain|CC0)/.test(f.credit)) {
+        // No restrictions は米議会図書館の「権利制限なし」の表示で、実質的に自由に使える
+        else if (!/（(Public domain|CC0|No restrictions)/.test(f.credit)) {
           say(`${at}: 写真の権利が Public domain / CC0 でない（${f.credit.slice(-24)}）`);
         }
       }
