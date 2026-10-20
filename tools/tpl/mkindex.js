@@ -63,10 +63,12 @@ for (const sub of SUBJECTS) {
     fields.push({ s: sub, f: name, t: (m.APP && m.APP.title) || name,
                   i: (m.APP && m.APP.icon) || '📕', u: url, n: nMaki });
     for (const w of m.WORKS) {
+      const unit = w.unit || (m.APP && m.APP.unit) || '巻';
       for (const k of w.maki) {
+        const no = '第' + k.no + unit;
         units.push({
           s: sub, f: name, u: url, id: w.id + '-' + k.no,
-          n: k.name, y: k.yomi || '', p: w.title + '　第' + k.no + '巻', c: k.lead || '', i: w.icon || '',
+          n: w.title + '　' + (k.name || no), y: k.yomi || '', p: w.title + '　' + no, c: k.lead || '', i: w.icon || '',
           w: [w.title, w.author],
         });
       }

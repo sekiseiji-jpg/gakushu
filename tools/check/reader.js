@@ -1,0 +1,159 @@
+// 読み物アプリ（古典文学・近現代文学）のデータを調べる。
+// クイズアプリの chk.js にあたるもので、見るのは次の点。
+//   ・APP と sw.js のキャッシュ名、index.html と sw.js の ?v= が揃っているか
+//   ・巻（章）の番号が 1 から連番か、要約があるか
+//   ・本文ファイルがあり、TEXT() の番号と中身の字数が data-works.js と合うか
+//   ・入力者注記の消し残し（［＃…］）や、置きかえられなかった外字（〓）がないか
+//   ・段落の種類（rich のとき）とルビ記法が壊れていないか
+//   ・日本語以外の文字がまぎれこんでいないか
+// 使い方: node tools/check/reader.js [国語/近現代文学 ...]   （無指定なら読み物すべて）
+const fs = require('fs');
+const path = require('path');
+const os = require('os');
+
+const ROOT = path.dirname(path.dirname(__dirname));
+const READERS = ['国語/古典文学', '国語/近現代文学'];
+
+// data-works.js を読み込む（末尾に module.exports があるのでそのまま require できる）
+function load(file) {
+  const p = path.join(os.tmpdir(), '_rd_' + Buffer.from(file).toString('hex').slice(-40) + '.js');
+  fs.writeFileSync(p, fs.readFileSync(file, 'utf8'));
+  delete require.cache[p];
+  return require(p);
+}
+
+// ルビ記法と改行を外した、見かけの字数。
+// JavaScript の length は UTF-16 の数なので、BMP 外の漢字が 2 と数えられてしまう。
+// データ側は文字の数で持っているため、ここでも文字の数で数える。
+const plain = (s) => s.replace(/《[^》]*》/g, '').replace(/[｜\n]/g, '');
+const clen = (s) => [...plain(s)].length;
+
+// 本文ファイルから TEXT(no, {...}) を取り出す
+function readText(file) {
+  const s = fs.readFileSync(file, 'utf8');
+  const m = /TEXT\((\d+),\s*(\{[\s\S]*\})\);/.exec(s);
+  if (!m) return null;
+  return { no: Number(m[1]), data: JSON.parse(m[2]) };
+}
+
+const NG_SCRIPT = /[Ѐ-ӿ؀-ۿ가-힯]/;   // キリル・アラビア・ハングル
+const LATIN_WORD = /[A-Za-z]{3,}/g;
+// 本文には原典由来の欧文が出てくるので、要約・見出しだけ厳しく見る
+// p=本文 v=韻文 c=地寄せ h=小見出し（大文字は前を一行あける）／ w=和歌（古典文学の原文）
+const KIND = /^[pPvVcChw]/;
+
+function check(rel) {
+  const dir = path.join(ROOT, rel);
+  const ng = [];
+  const say = (m) => ng.push(m);
+  const { APP, WORKS } = load(path.join(dir, 'data-works.js'));
+
+  // ---- 版とキャッシュ名 ----
+  const sw = fs.readFileSync(path.join(dir, 'sw.js'), 'utf8');
+  const html = fs.readFileSync(path.join(dir, 'index.html'), 'utf8');
+  const cache = (/const CACHE = '([^']+)'/.exec(sw) || [])[1];
+  const texts = (/const TEXTS = '([^']+)'/.exec(sw) || [])[1];
+  if (cache !== APP.cache) say(`キャッシュ名がずれている: APP.cache=${APP.cache} / sw.js=${cache}`);
+  if (texts !== APP.textCache) say(`本文のキャッシュ名がずれている: APP.textCache=${APP.textCache} / sw.js=${texts}`);
+  const vSw = [...new Set((sw.match(/\?v=(\d+)/g) || []))];
+  const vHtml = [...new Set((html.match(/\?v=(\d+)/g) || []))];
+  if (vSw.length !== 1 || vHtml.length !== 1 || vSw[0] !== vHtml[0]) {
+    say(`?v= が揃っていない: index.html=${vHtml.join(',')} / sw.js=${vSw.join(',')}`);
+  }
+  for (const k of ['key', 'title', 'icon', 'unit', 'textVer', 'cache', 'textCache', 'lead']) {
+    if (!APP[k]) say(`APP.${k} がない`);
+  }
+
+  // ---- 作品と巻 ----
+  const ids = new Set();
+  let nMaki = 0, nChar = 0, nPara = 0;
+  for (const w of WORKS) {
+    if (ids.has(w.id)) say(`作品idの重複: ${w.id}`);
+    ids.add(w.id);
+    for (const k of ['title', 'yomi', 'author', 'era', 'icon', 'color', 'lead']) {
+      if (!w[k]) say(`${w.id}: ${k} がない`);
+    }
+    if (!Array.isArray(w.about) || !w.about.length) say(`${w.id}: about がない`);
+    if (!Array.isArray(w.sources) || !w.sources.length) say(`${w.id}: sources がない`);
+    // 作品の解説にも、書いているうちに他言語がまぎれこむことがある
+    for (const t of [w.lead, w.era, w.genre || ''].concat(w.about || [])) {
+      if (NG_SCRIPT.test(t)) say(`${w.id}: 解説に日本語以外の文字 ${t.slice(0, 30)}`);
+      const lat = t.match(LATIN_WORD);
+      if (lat) say(`${w.id}: 解説に英単語 ${lat.join(',')}`);
+    }
+    // 出どころの注記は、底本名やライセンス名に欧文が入るので日本語以外の字だけ見る
+    for (const x of w.sources || []) {
+      if (NG_SCRIPT.test(x.note || '')) say(`${w.id}: 出どころに日本語以外の文字`);
+    }
+    if (w.parts) {
+      for (const m of w.maki) {
+        if (!w.parts.some((p) => p.n === m.part)) say(`${w.id}/${m.no}: part が parts にない`);
+      }
+    }
+    w.maki.forEach((m, i) => {
+      const at = `${w.id}/${m.no}`;
+      if (m.no !== i + 1) say(`${at}: 番号が連番でない（${i + 1} のはず）`);
+      if (!Array.isArray(m.chars) || m.chars.length !== 2) say(`${at}: chars が [訳,原文] でない`);
+      if (!Array.isArray(m.summary) || !m.summary.length) say(`${at}: 要約がない`);
+      (m.summary || []).forEach((s, j) => {
+        if (s.length < 20) say(`${at}: 要約${j + 1}が短すぎる`);
+        if (NG_SCRIPT.test(s)) say(`${at}: 要約に日本語以外の文字 ${s.slice(0, 30)}`);
+        const lat = s.match(LATIN_WORD);
+        if (lat) say(`${at}: 要約に英単語 ${lat.join(',')}`);
+      });
+      if (m.lead && NG_SCRIPT.test(m.lead)) say(`${at}: leadに日本語以外の文字`);
+
+      // ---- 本文ファイル ----
+      const f = path.join(dir, 'text', w.id, String(m.no).padStart(2, '0') + '.js');
+      if (!fs.existsSync(f)) { say(`${at}: 本文ファイルがない`); return; }
+      const t = readText(f);
+      if (!t) { say(`${at}: TEXT() を読めない`); return; }
+      if (t.no !== m.no) say(`${at}: TEXT() の番号が ${t.no} になっている`);
+      const y = t.data.y || [], g = t.data.g || [];
+      // 種類つきの段落は先頭1字が種類。訳は rich の作品だけ、原文は常に種類つき。
+      const cy = y.reduce((a, s) => a + clen(w.rich ? s.slice(1) : s), 0);
+      const cg = g.reduce((a, s) => a + clen(s.slice(1)), 0);
+      if (cy !== m.chars[0]) say(`${at}: 訳の字数が合わない（データ${m.chars[0]} / 本文${cy}）`);
+      if (cg !== m.chars[1]) say(`${at}: 原文の字数が合わない（データ${m.chars[1]} / 本文${cg}）`);
+      if (m.aligned && y.length !== g.length) say(`${at}: aligned なのに段落数が違う（${y.length}/${g.length}）`);
+      nMaki++; nChar += cy + cg; nPara += y.length + g.length;
+
+      for (const [kind, list] of [[!!w.rich, y], [true, g]]) {
+        for (const p of list) {
+          const body = kind ? p.slice(1) : p;
+          if (kind && !KIND.test(p)) say(`${at}: 段落の種類がおかしい ${p.slice(0, 20)}`);
+          if (/［＃/.test(p)) say(`${at}: 注記の消し残し ${p.slice(0, 40)}`);
+          if (p.includes('〓')) say(`${at}: 置きかえられなかった外字 ${p.slice(0, 40)}`);
+          if (!body.trim()) say(`${at}: 空の段落`);
+          if (NG_SCRIPT.test(p)) say(`${at}: 本文に日本語以外の文字 ${p.slice(0, 30)}`);
+          // ルビ記法：《 と 》 が同数で、必ず 《 が先
+          let depth = 0, bad = false;
+          for (const ch of p) {
+            if (ch === '《') depth++;
+            else if (ch === '》') { depth--; if (depth < 0) bad = true; }
+          }
+          if (bad || depth !== 0) say(`${at}: ルビ記法が閉じていない ${p.slice(0, 40)}`);
+        }
+      }
+    });
+  }
+  return { ng, n: { works: WORKS.length, maki: nMaki, chars: nChar, paras: nPara } };
+}
+
+const want = process.argv.slice(2);
+const list = want.length ? want : READERS;
+let bad = 0;
+for (const rel of list) {
+  const r = check(rel);
+  const s = r.n;
+  if (r.ng.length) {
+    bad += r.ng.length;
+    console.log(`✗ ${rel}`);
+    for (const m of r.ng.slice(0, 40)) console.log('    ' + m);
+    if (r.ng.length > 40) console.log(`    …ほか ${r.ng.length - 40} 件`);
+  } else {
+    console.log(`✓ ${rel.padEnd(18)} ${s.works}作品 ${s.maki}章 ${s.paras}段 ${s.chars.toLocaleString('ja-JP')}字`);
+  }
+}
+if (bad) { console.log(`\n読み物: ${bad}件の問題`); process.exit(1); }
+console.log('\n読み物: 問題なし');

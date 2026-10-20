@@ -206,6 +206,19 @@ def shiori(d, cx, cy, r, t):
     bgc=d._image.getpixel((0,0))                   # しおりの切れこみは地の色で抜く
     d.polygon([(bx-bw, by), (bx+bw, by), (bx, by-int(r*0.18))], fill=bgc)
 
+def pennib(d, cx, cy, r, t):
+    # ペン先（近現代文学）。下向きの輪郭に、丸い穴と割れ目。
+    w = int(r*0.74); h = int(r*2.05)
+    top = cy - h//2
+    sh = top+int(h*0.10)                               # 肩の高さ
+    pts = [(cx-w, sh), (cx-w, top+int(h*0.42)), (cx, top+h),
+           (cx+w, top+int(h*0.42)), (cx+w, sh), (cx-w, sh)]
+    d.line(pts, fill=FG, width=t, joint='curve')
+    hr = max(2, int(r*0.21))                           # 丸い穴
+    hy = top+int(h*0.30)
+    d.ellipse([cx-hr, hy-hr, cx+hr, hy+hr], outline=FG, width=max(1, int(t*0.8)))
+    d.line([cx, hy+hr, cx, top+h], fill=FG, width=max(1, int(t*0.7)))   # 割れ目
+
 SHAPES={'物理':atom, '化学':flask, '生物':dna, '地学':earth, '倫理':enso,
         '数学ⅠA':graph, '数学ⅡB':sigma, '数学ⅢC':integral,
         '現代文':genkou, '古文':makimono, '漢文':fude,
@@ -213,7 +226,8 @@ SHAPES={'物理':atom, '化学':flask, '生物':dna, '地学':earth, '倫理':en
         '漢検2級':henbou}
 
 # apps.json に載せない、専用のつくりのアプリ（出力先は <教科>/<分野>）
-READERS=[('国語', '古典文学', shiori, '#7a3b6a')]
+READERS=[('国語', '古典文学', shiori, '#7a3b6a'),
+         ('国語', '近現代文学', pennib, '#34516e')]
 
 def hex2rgb(h):
     h=h.lstrip('#'); return tuple(int(h[i:i+2],16) for i in (0,2,4))

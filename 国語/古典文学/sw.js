@@ -1,13 +1,14 @@
 // オフライン対応：骨組みは先に保存し、本文は読んだ巻だけをあとから保存する。
 // 全巻をまとめて保存する操作は設定シートにあり、ページ側から同じキャッシュに入れる（app.js）。
 // ファイルを更新したときは CACHE の番号を上げる（index.html の ?v= と同じ番号にする）。
-const CACHE = 'kotenbungaku-v6';
+const CACHE = 'kotenbungaku-v7';          // 骨組み（版を上げると入れ替わる）
+const TEXTS = 'kotenbungaku-text';     // 本文（版を上げても残す）
 const SHELL = [
   './',
   'index.html',
-  'style.css?v=6',
-  'data-works.js?v=6',
-  'app.js?v=6',
+  'style.css?v=7',
+  'data-works.js?v=7',
+  'app.js?v=7',
   'manifest.webmanifest',
   'icon-192.png',
   'icon-512.png',
@@ -24,7 +25,9 @@ self.addEventListener('install', (e) => {
 self.addEventListener('activate', (e) => {
   e.waitUntil(
     caches.keys()
-      .then((ks) => Promise.all(ks.filter((k) => k !== CACHE).map((k) => caches.delete(k))))
+      .then((ks) => Promise.all(ks
+        .filter((k) => k !== CACHE && k !== TEXTS)
+        .map((k) => caches.delete(k))))
       .then(() => self.clients.claim()),
   );
 });
@@ -44,7 +47,8 @@ self.addEventListener('fetch', (e) => {
       return fetch(e.request).then((res) => {
         if (res && res.ok) {
           const copy = res.clone();
-          caches.open(CACHE).then((c) => c.put(e.request, copy));
+          const store = url.pathname.indexOf('/text/') >= 0 ? TEXTS : CACHE;
+          caches.open(store).then((c) => c.put(e.request, copy));
         }
         return res;
       });

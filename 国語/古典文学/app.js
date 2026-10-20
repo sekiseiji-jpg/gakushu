@@ -1,16 +1,18 @@
-/* 古典文学 ― 読むためのアプリ
-   画面は3つ（作品一覧 / 作品の扉 / 巻）。URLのハッシュで行き来する。
+/* 読み物アプリの本体（古典文学・近現代文学で同じものを使う）
+   画面は3つ（作品一覧 / 作品の扉 / 本文）。URLのハッシュで行き来する。
      #w=genji            作品の扉
-     #w=genji&m=5        第5帖
+     #w=genji&m=5        第5（巻・帖・章…）
      #w=genji&m=5&t=genbun  原文で開く
-   本文は巻ごとの別ファイルで、開いた巻だけを <script> で読み込む。
+   本文は1つずつ別ファイルにしてあり、開いたものだけを <script> で読み込む。
+   作品ごとの違いは data-works.js の APP と WORKS に置き、このファイル は触らない。
 */
 (function () {
   'use strict';
 
   var KEY = APP.key;
-  var TEXT_VER = '2';                  // 本文URLの ?v=（index.html の ?v= と同じ番号）
-  var CACHE_NAME = 'kotenbungaku-v2';  // sw.js の CACHE と必ず同じにする
+  var TEXT_VER = APP.textVer;          // 本文URLの ?v=（本文を直したときだけ上げる）
+  var CACHE_NAME = APP.textCache;      // 本文用。sw.js の TEXTS と必ず同じ文字列にする
+  var U0 = APP.unit || '巻';            // この本棚でのかぞえ方（巻・章など）
   var $ = function (id) { return document.getElementById(id); };
   var el = function (tag, cls, txt) {
     var e = document.createElement(tag);
@@ -78,7 +80,7 @@
     if (bytes >= 1024) return Math.round(bytes / 1024) + 'KB';
     return bytes + 'B';
   }
-  function unitOf(w) { return w.unit || '帖'; }
+  function unitOf(w) { return w.unit || U0; }
 
   // 保存済みの巻数とおよその容量を数える
   function scanSaved(w) {
@@ -108,7 +110,7 @@
       ui.bar.classList.add('hidden');
       ui.save.disabled = !!dl;
       ui.del.disabled = !!dl || r.n === 0;
-      ui.save.textContent = r.n >= r.all ? '保存しなおす' : '全巻を保存';
+      ui.save.textContent = r.n >= r.all ? '保存しなおす' : '全' + unitOf(w) + 'を保存';
       ui.state.textContent = r.n === 0
         ? 'まだ保存していません'
         : (r.n >= r.all
@@ -203,7 +205,7 @@
       bar.appendChild(fill);
       d.appendChild(bar);
       var btns = el('div', 'dl-btns');
-      var save = el('button', 'mini', '全巻を保存');
+      var save = el('button', 'mini', '全' + unitOf(w) + 'を保存');
       var del = el('button', 'mini', '保存した本文を消す');
       btns.appendChild(save); btns.appendChild(del);
       d.appendChild(btns);
@@ -256,8 +258,8 @@
       b.appendChild(el('div', 'ld', w.lead));
       var read = countRead(w);
       b.appendChild(el('div', 'meta',
-        '全' + w.maki.length + '巻　' + fmt(totalChars(w)) + '字' +
-        (read ? '　／　読んだ巻 ' + read : '')));
+        '全' + w.maki.length + unitOf(w) + '　' + fmt(totalChars(w)) + '字' +
+        (read ? '　／　読んだ' + unitOf(w) + ' ' + read : '')));
       b.onclick = function () { go('#w=' + w.id); };
       box.appendChild(b);
     });
@@ -281,19 +283,21 @@
     h.appendChild(el('div', 'by', w.author + '　' + w.era));
     h.appendChild(el('div', 'ld', w.lead));
 
-    // 巻一覧（部ごとにまとめる）
+    // 本文の一覧（部ごとにまとめる）
     var mk = $('work-maki');
     mk.textContent = '';
-    w.parts.forEach(function (p) {
-      var pb = el('div', 'partbox');
-      var t = el('div');
-      t.appendChild(el('b', null, p.t));
-      t.appendChild(el('span', 'rg', p.range));
-      pb.appendChild(t);
-      pb.appendChild(el('p', null, p.b));
-      mk.appendChild(pb);
+    (w.parts || [null]).forEach(function (p) {     // 部立てのない作品は一続きで並べる
+      if (p) {
+        var pb = el('div', 'partbox');
+        var t = el('div');
+        t.appendChild(el('b', null, p.t));
+        t.appendChild(el('span', 'rg', p.range));
+        pb.appendChild(t);
+        pb.appendChild(el('p', null, p.b));
+        mk.appendChild(pb);
+      }
       var list = el('div', 'makilist');
-      w.maki.filter(function (m) { return m.part === p.n; }).forEach(function (m) {
+      w.maki.filter(function (m) { return !p || m.part === p.n; }).forEach(function (m) {
         list.appendChild(makiRow(w, m));
       });
       mk.appendChild(list);
@@ -330,6 +334,7 @@
     b.onclick = function () { go('#w=' + w.id + '&m=' + m.no); };
     return b;
   }
+  document.querySelector('[data-wtab="maki"]').textContent = U0 + '一覧';
   document.querySelectorAll('[data-wtab]').forEach(function (t) {
     t.onclick = function () {
       document.querySelectorAll('[data-wtab]').forEach(function (x) { x.classList.remove('on'); });
@@ -348,9 +353,12 @@
     return (type === 'yaku' ? m.chars[0] : m.chars[1]) > 0;
   }
   function firstType(m) { return has(m, 'yaku') ? 'yaku' : 'genbun'; }
+  function labelOf(w, type) {
+    return type === 'genbun' ? '原文' : (w.yakuLabel || '現代語訳');
+  }
   function noteOf(w, type) {
     if (type === 'taisho') return '原文と現代語訳を一段ずつ並べています。';
-    var label = type === 'genbun' ? '原文' : '現代語訳';
+    var label = labelOf(w, type);
     for (var i = 0; i < w.sources.length; i++) {
       if (w.sources[i].label === label) {
         return w.sources[i].by === '―' ? '' : label + '：' + w.sources[i].by;
@@ -362,14 +370,14 @@
     curWork = w; curMaki = m; curType = type;
     var h = $('maki-head');
     h.textContent = '';
-    h.appendChild(el('div', 'no', w.title + '　第' + m.no + (w.unit || '巻')));
+    h.appendChild(el('div', 'no', w.title + '　第' + m.no + unitOf(w)));
     var t = el('h2', null, m.name);
     h.appendChild(t);
     h.appendChild(el('div', 'ym', m.yomi));
 
     var s = $('maki-summary');
     s.textContent = '';
-    s.appendChild(el('b', null, 'この巻のあらすじ'));
+    s.appendChild(el('b', null, 'この' + unitOf(w) + 'のあらすじ'));
     m.summary.forEach(function (p) { s.appendChild(el('p', null, p)); });
 
     // その巻にある本文だけボタンを出す（作品によって訳だけ・原文だけのものがある）
@@ -378,6 +386,7 @@
       var avail = has(m, b.dataset.text);
       b.classList.toggle('hidden', !avail || !many);
       b.classList.toggle('on', b.dataset.text === type);
+      if (b.dataset.text === 'yaku') b.textContent = labelOf(w, 'yaku');
       b.onclick = function () { go('#w=' + w.id + '&m=' + m.no + '&t=' + b.dataset.text); };
     });
     $('sw-note').textContent = noteOf(w, type);
@@ -402,7 +411,7 @@
     var pg = $('maki-pager');
     pg.textContent = '';
     var i = w.maki.indexOf(m);
-    var U = w.unit || '巻';
+    var U = unitOf(w);
     var prev = el('button', null, i > 0 ? '◀ 第' + w.maki[i - 1].no + U + '　' + w.maki[i - 1].name : '◀ 前へ');
     prev.disabled = i <= 0;
     prev.onclick = function () { go('#w=' + w.id + '&m=' + w.maki[i - 1].no + '&t=' + type); };
@@ -426,10 +435,61 @@
         var waka = line.charAt(0) === 'w';
         frag.appendChild(el('p', waka ? 'waka' : null, line.slice(1)));
       });
+    } else if (curWork && curWork.rich) {
+      d.y.forEach(function (p) { frag.appendChild(richPara(p)); });
     } else {
       d.y.forEach(function (p) { frag.appendChild(el('p', null, p)); });
     }
     body.appendChild(frag);
+  }
+
+  /* 種類つきの段落。先頭1字が種類で、大文字は「前を一行あける」。
+     p=本文 v=韻文や字下げ c=地から上げ h=小見出し */
+  var KIND = { p: ['p', ''], v: ['p', 'verse'], c: ['p', 'right'], h: ['h3', 'sec'] };
+  function richPara(src) {
+    var k = src.charAt(0);
+    var gap = k >= 'A' && k <= 'Z';
+    var def = KIND[gap ? k.toLowerCase() : k] || KIND.p;
+    var e = document.createElement(def[0]);
+    e.className = (def[1] + (gap ? ' gap' : '')).trim();
+    ruby(e, src.slice(1));
+    return e;
+  }
+
+  /* 青空文庫のルビ記法を <ruby> に組む。
+     ｜親文字《よみ》 のほか、｜のないものは直前の漢字の並びを親文字とする。 */
+  var R_KANJI = /[々〆ヶ一-鿿㐀-䶿豈-﫿]+$/;
+  var R_KANA = /[ぁ-ゟ゠-ヿA-Za-z0-9]+$/;
+  function ruby(node, s) {
+    var buf = '', i = 0;
+    function flush() { if (buf) { node.appendChild(document.createTextNode(buf)); buf = ''; } }
+    function put(base, yomi) {
+      var r = document.createElement('ruby');
+      r.appendChild(document.createTextNode(base));
+      var rt = document.createElement('rt');
+      rt.textContent = yomi;
+      r.appendChild(rt);
+      node.appendChild(r);
+    }
+    while (i < s.length) {
+      var c = s.charAt(i);
+      if (c === '｜' || c === '《') {
+        var o = c === '｜' ? s.indexOf('《', i) : i;
+        var e = o < 0 ? -1 : s.indexOf('》', o);
+        if (e < 0) { buf += c; i++; continue; }
+        var yomi = s.slice(o + 1, e);
+        if (c === '｜') { flush(); put(s.slice(i + 1, o), yomi); }
+        else {
+          var m = R_KANJI.exec(buf) || R_KANA.exec(buf);
+          if (m) { buf = buf.slice(0, buf.length - m[0].length); flush(); put(m[0], yomi); }
+          else { flush(); node.appendChild(document.createTextNode(yomi)); }
+        }
+        i = e + 1;
+        continue;
+      }
+      buf += c; i++;
+    }
+    flush();
   }
 
   /* ---------- 画面の切り替え ---------- */
@@ -497,7 +557,7 @@
     $('set-lh').value = st.lh;
     var n = 0;
     for (var k in st.read) n++;
-    $('read-hint').textContent = '読んだ巻は ' + n;
+    $('read-hint').textContent = '読んだ' + U0 + 'は ' + n;
     renderSave();
     $('setwrap').classList.remove('hidden');
   };
@@ -507,9 +567,9 @@
   $('set-theme').onchange = function () { st.theme = this.value; applySettings(); save(); };
   $('set-lh').onchange = function () { st.lh = this.value; applySettings(); save(); };
   $('btn-clear').onclick = function () {
-    if (!confirm('読んだ巻の記録を消します。よろしいですか。')) return;
+    if (!confirm('読んだ' + U0 + 'の記録を消します。よろしいですか。')) return;
     st.read = {}; st.last = null; save(); route();
-    $('read-hint').textContent = '読んだ巻は 0';
+    $('read-hint').textContent = '読んだ' + U0 + 'は 0';
   };
 
   /* ---------- 起動 ---------- */
