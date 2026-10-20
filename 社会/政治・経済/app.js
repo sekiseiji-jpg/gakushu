@@ -123,15 +123,17 @@ function renderEraBody() {
   const fg = S.set.furigana;
   if (curSub === 'summary') {
     box.innerHTML = `<div class="card">${e.summary.map((p) => `<p class="para">${esc(p)}</p>`).join('')}</div>
+      ${figsHTML(e, 'ov', true)}
       <div class="card"><div class="sec-title">この${U}のおもな${L === '年表' ? 'できごと' : 'ポイント'}</div>
       ${e.events.slice(0, 6).map((v) => `<div class="item"><div class="item-h">${esc(v.y)} ${esc(v.t)}</div></div>`).join('')}
       <button class="more-btn" data-goto="chrono">${L}をすべて見る →</button></div>`;
     const g = $('[data-goto]', box);
     if (g) g.addEventListener('click', () => { curSub = 'chrono'; $$('#era-subtabs .subtab').forEach((x) => x.classList.toggle('active', x.dataset.sub === 'chrono')); renderEraBody(); });
   } else if (curSub === 'detail') {
-    box.innerHTML = e.sections.map((s) => `<div class="card">
+    box.innerHTML = e.sections.map((s, si) => `<div class="card">
       <div class="sec-title">${esc(s.t)}</div>
       ${s.items.map((i) => `<div class="item"><div class="item-h">${esc(i.h)}</div><p class="item-b">${esc(i.b)}</p></div>`).join('')}
+      ${figsHTML(e, 'sec' + si)}
     </div>`).join('');
   } else if (curSub === 'words') {
     box.innerHTML = `<div class="card"><div class="sec-title">重要用語</div><div class="kw-list">
@@ -177,6 +179,41 @@ function bindStars(root) {
     else { S.savedWords.push({ w, y: b.dataset.y, d: b.dataset.d, era: b.dataset.era }); b.classList.add('on'); b.textContent = '★'; toast('⭐ 保存しました'); }
     save();
   }));
+}
+/* ========== 図・表・写真 ========== */
+/* 単元データの figs に図版を置くと、ここで描かれる。
+   at  … 出す場所。'ov' は概要タブ、'sec0' 'sec1' … は詳細タブの何番目の節の下か
+   k   … 種類。'table'（表）/ 'svg'（図解）/ 'photo'（写真）
+   svg は自分たちで書いたものだけを入れる（色は CSS 変数を使うので配色に追随する）。*/
+function figHTML(f) {
+  let body = '';
+  if (f.k === 'table') {
+    body = `<div class="fig-scroll"><table class="fig-table">
+      <thead><tr>${f.head.map((h) => `<th>${esc(h)}</th>`).join('')}</tr></thead>
+      <tbody>${f.rows.map((r) => `<tr>${r.map((c, i) => (i === 0
+        ? `<th scope="row">${esc(c)}</th>` : `<td>${esc(c)}</td>`)).join('')}</tr>`).join('')}</tbody>
+    </table></div>`;
+  } else if (f.k === 'svg' || f.k === 'map') {
+    body = `<div class="fig-svg${f.k === 'map' ? ' fig-map' : ''}">${f.svg}</div>`;
+  } else if (f.k === 'photo') {
+    body = `<div class="fig-photo"><img src="${esc(f.src)}" alt="${esc(f.t)}" loading="lazy"></div>`;
+  }
+  return `<figure class="fig">
+    <figcaption class="fig-t">${esc(f.t)}</figcaption>
+    ${body}
+    ${f.cap ? `<p class="fig-cap">${esc(f.cap)}</p>` : ''}
+    ${f.credit ? `<p class="fig-credit">${esc(f.credit)}</p>` : ''}
+  </figure>`;
+}
+function figsOf(e) {
+  if (typeof FIGS !== 'undefined' && FIGS[e.id]) return FIGS[e.id];
+  return e.figs || [];
+}
+function figsHTML(e, at, card) {
+  const list = figsOf(e).filter((f) => f.at === at);
+  if (!list.length) return '';
+  const h = list.map(figHTML).join('');
+  return card ? `<div class="card">${h}</div>` : h;
 }
 function topicHTML(t, e) {
   return `<div class="card topic-card" style="--ec:${e.color}">

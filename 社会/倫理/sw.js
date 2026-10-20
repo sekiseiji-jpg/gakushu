@@ -1,12 +1,13 @@
 // オフライン対応: アプリのファイルはネット優先で取得し、つながらないときはキャッシュを使う
 // ファイルを更新したら CACHE の番号と、index.html の ?v= の番号を一緒に上げる
-const CACHE = 'rinri-v4';
+const CACHE = 'rinri-v5';
 const FILES = [
   './',
   'index.html',
   'style.css',
   'app.js',
   'data-units.js',
+  'data-figs.js',
   'data-quiz.js',
   'data-themes.js',
   'manifest.webmanifest',

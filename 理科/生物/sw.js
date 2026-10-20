@@ -1,12 +1,13 @@
 // オフライン対応: アプリのファイルはネット優先で取得し、つながらないときはキャッシュを使う
 // ファイルを更新したら CACHE の番号と、index.html の ?v= の番号を一緒に上げる
-const CACHE = 'seibutsu-v5';
+const CACHE = 'seibutsu-v6';
 const FILES = [
   './',
   'index.html',
   'style.css',
   'app.js',
   'data-units.js',
+  'data-figs.js',
   'data-quiz.js',
   'data-themes.js',
   'manifest.webmanifest',
