@@ -136,9 +136,49 @@ def fude(d, cx, cy, r, t):
     d.line([lx+int(r*0.20), ly+int(r*0.96), lx+int(r*0.50), ly+int(r*0.54)],
            fill=FG, width=t)
 
+def bunkei(d, cx, cy, r, t):
+    # 文の骨組み（英文法）。三つの枠を線で結び、主語・動詞・目的語の並びを表す。
+    w=int(r*0.56); h=int(r*0.52); gap=int(r*0.30)
+    total=w*3+gap*2
+    x0=cx-total//2; y0=cy-h//2
+    for i in range(3):
+        x=x0+(w+gap)*i
+        d.rectangle([x, y0, x+w, y0+h], outline=FG, width=t)
+        if i < 2:
+            d.line([x+w, cy, x+w+gap, cy], fill=FG, width=max(1,int(t*0.8)))
+    d.line([x0, y0+h+int(r*0.34), x0+total, y0+h+int(r*0.34)],
+           fill=FG, width=max(1,int(t*0.7)))
+
+def dokkai(d, cx, cy, r, t):
+    # 本文と虫眼鏡（英文読解）。横線の束に、円と柄を重ねる。
+    w=int(r*1.44); x0=cx-w//2
+    for i in range(4):
+        yy=cy-int(r*0.78)+int(r*0.44)*i
+        ww=w if i % 2 == 0 else int(w*0.72)
+        d.line([x0, yy, x0+ww, yy], fill=FG, width=max(1,int(t*0.8)))
+    gr=int(r*0.52); gx, gy = cx+int(r*0.46), cy+int(r*0.28)
+    d.ellipse([gx-gr, gy-gr, gx+gr, gy+gr], outline=FG, width=t)
+    d.line([gx+int(gr*0.72), gy+int(gr*0.72), gx+int(gr*1.5), gy+int(gr*1.5)],
+           fill=FG, width=max(2,int(t*1.2)))
+
+def jisho(d, cx, cy, r, t):
+    # 開いた辞書（語彙と表現）。左右の頁と、中央の綴じ目。
+    w=int(r*1.66); h=int(r*1.06)
+    x0, y0 = cx-w//2, cy-h//2
+    d.line([cx, y0-int(r*0.10), cx, y0+h], fill=FG, width=t)
+    for sx in (-1, 1):
+        d.line([cx, y0-int(r*0.10), cx+sx*w//2, y0+int(r*0.14)], fill=FG, width=t)
+        d.line([cx+sx*w//2, y0+int(r*0.14), cx+sx*w//2, y0+h], fill=FG, width=t)
+        d.line([cx, y0+h, cx+sx*w//2, y0+h], fill=FG, width=t)
+        for i in (1, 2):
+            yy=y0+int(r*0.40)+int(r*0.30)*i
+            d.line([cx+sx*int(w*0.12), yy, cx+sx*int(w*0.40), yy],
+                   fill=FG, width=max(1,int(t*0.6)))
+
 SHAPES={'物理':atom, '化学':flask, '生物':dna, '地学':earth, '倫理':enso,
         '数学ⅠA':graph, '数学ⅡB':sigma, '数学ⅢC':integral,
-        '現代文':genkou, '古文':makimono, '漢文':fude}
+        '現代文':genkou, '古文':makimono, '漢文':fude,
+        '英文法':bunkei, '英文読解':dokkai, '語彙と表現':jisho}
 
 def hex2rgb(h):
     h=h.lstrip('#'); return tuple(int(h[i:i+2],16) for i in (0,2,4))
