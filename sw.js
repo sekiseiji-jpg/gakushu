@@ -1,7 +1,7 @@
 // 学習アプリ ポータルのオフライン対応
 // ネット優先で取得し、つながらないときはキャッシュを使う。
 // 各アプリは自分のフォルダに専用の Service Worker をもつため、ここではポータルの画面だけを扱う。
-const CACHE = 'gakushu-portal-v9';
+const CACHE = 'gakushu-portal-v10';
 const FILES = [
   './',
   'index.html',

@@ -175,10 +175,27 @@ def jisho(d, cx, cy, r, t):
             d.line([cx+sx*int(w*0.12), yy, cx+sx*int(w*0.40), yy],
                    fill=FG, width=max(1,int(t*0.6)))
 
+def henbou(d, cx, cy, r, t):
+    # 偏と旁（漢検2級）。外枠のマスを縦に割り、左に偏の2画、右に旁の3画を置く。
+    s=int(r*1.56); x0, y0 = cx-s//2, cy-s//2
+    d.rectangle([x0, y0, x0+s, y0+s], outline=FG, width=t)
+    bx=x0+int(s*0.38)                                  # 偏と旁の境目
+    d.line([bx, y0, bx, y0+s], fill=FG, width=max(1,int(t*0.7)))
+    lw=max(1,int(t*0.8))
+    lx0, lx1 = x0+int(s*0.10), bx-int(s*0.08)          # 偏の画
+    for i in (1, 2):
+        yy=y0+s*i//3
+        d.line([lx0, yy, lx1, yy], fill=FG, width=lw)
+    rx0, rx1 = bx+int(s*0.10), x0+s-int(s*0.10)        # 旁の画
+    for i in (1, 2, 3):
+        yy=y0+s*i//4
+        d.line([rx0, yy, rx1, yy], fill=FG, width=lw)
+
 SHAPES={'物理':atom, '化学':flask, '生物':dna, '地学':earth, '倫理':enso,
         '数学ⅠA':graph, '数学ⅡB':sigma, '数学ⅢC':integral,
         '現代文':genkou, '古文':makimono, '漢文':fude,
-        '英文法':bunkei, '英文読解':dokkai, '語彙と表現':jisho}
+        '英文法':bunkei, '英文読解':dokkai, '語彙と表現':jisho,
+        '漢検2級':henbou}
 
 def hex2rgb(h):
     h=h.lstrip('#'); return tuple(int(h[i:i+2],16) for i in (0,2,4))

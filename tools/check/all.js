@@ -1,4 +1,4 @@
-// 全18分野に chk・bias・xref・xord をかけて、最後に要約を出す。
+// 全19分野に chk・bias・xref・xord をかけて、最後に要約を出す。
 // 使い方: node tools/check/all.js [-v]      -v をつけると chk の内訳もすべて表示する
 const path = require('path');
 const { execFileSync } = require('child_process');
