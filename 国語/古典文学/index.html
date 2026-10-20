@@ -12,7 +12,7 @@
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
-<link rel="stylesheet" href="style.css?v=1">
+<link rel="stylesheet" href="style.css?v=2">
 </head>
 <body>
 
@@ -34,6 +34,7 @@
         <li>原文と現代語訳を、巻ごとに切り替えて読めます。</li>
         <li>巻を開くと、まず要約が出ます。あらすじをつかんでから本文に入れます。</li>
         <li>本文は開いた巻だけを読み込みます。読んだ巻は端末に残るので、次からは通信がなくても開けます。</li>
+        <li>通信のない場所で通して読むときは、設定（⚙）から全巻をまとめて保存しておいてください。</li>
       </ul>
     </div>
   </section>
@@ -79,16 +80,25 @@
     <label class="row"><span>行間</span>
       <select id="set-lh"><option value="n">ふつう</option><option value="w">ひろめ</option></select>
     </label>
-    <div class="row rowbtn">
-      <span>読んだ記録</span>
-      <button id="btn-clear" class="mini">消す</button>
+
+    <div class="sect">
+      <h3>オフラインで読む</h3>
+      <div id="dl-list"></div>
+      <p class="hint" id="dl-hint"></p>
     </div>
-    <p class="hint" id="cache-hint"></p>
+
+    <div class="sect">
+      <h3>読書記録</h3>
+      <div class="row rowbtn">
+        <span id="read-hint">読んだ巻</span>
+        <button id="btn-clear" class="mini">消す</button>
+      </div>
+    </div>
     <button id="btn-close" class="close">閉じる</button>
   </div>
 </div>
 
-<script src="data-works.js?v=1"></script>
-<script src="app.js?v=1"></script>
+<script src="data-works.js?v=2"></script>
+<script src="app.js?v=2"></script>
 </body>
 </html>

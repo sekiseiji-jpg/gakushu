@@ -9,6 +9,8 @@
   'use strict';
 
   var KEY = APP.key;
+  var TEXT_VER = '2';                  // 本文URLの ?v=（index.html の ?v= と同じ番号）
+  var CACHE_NAME = 'kotenbungaku-v2';  // sw.js の CACHE と必ず同じにする
   var $ = function (id) { return document.getElementById(id); };
   var el = function (tag, cls, txt) {
     var e = document.createElement(tag);
@@ -47,6 +49,9 @@
     cache[key] = data;
     if (pending[key]) { pending[key].forEach(function (f) { f(data); }); delete pending[key]; }
   };
+  function textUrl(workId, no) {
+    return 'text/' + workId + '/' + (no < 10 ? '0' + no : no) + '.js?v=' + TEXT_VER;
+  }
   function loadText(workId, no, cb, onErr) {
     var key = workId + '/' + no;
     if (cache[key]) { cb(cache[key]); return; }
@@ -54,9 +59,187 @@
     pending[key] = [cb];
     window.__loadingWork = workId;
     var s = document.createElement('script');
-    s.src = 'text/' + workId + '/' + (no < 10 ? '0' + no : no) + '.js?v=1';
+    s.src = textUrl(workId, no);
     s.onerror = function () { delete pending[key]; onErr(); };
     document.head.appendChild(s);
+  }
+
+  /* ---------- 本文のまとめ保存（オフラインで通読するため） ---------- */
+  /* 本文は開いた巻だけが端末に残る作りなので、作品ごとにまとめて
+     Service Worker と同じキャッシュへ入れられるようにする。
+     キャッシュ名（CACHE_NAME）と本文URLの ?v= が sw.js とずれると、
+     保存したのに使われないという分かりにくい不具合になる。 */
+  var canSave = ('caches' in window) && location.protocol.indexOf('http') === 0;
+  var dl = null;    // 保存中の様子 {id, done, bad, total, stop}
+  var uis = {};     // 作品id -> 設定シート内の部品
+
+  function size2(bytes) {
+    if (bytes >= 1048576) return (bytes / 1048576).toFixed(1) + 'MB';
+    if (bytes >= 1024) return Math.round(bytes / 1024) + 'KB';
+    return bytes + 'B';
+  }
+  function unitOf(w) { return w.unit || '帖'; }
+
+  // 保存済みの巻数とおよその容量を数える
+  function scanSaved(w) {
+    return caches.open(CACHE_NAME).then(function (c) {
+      return Promise.all(w.maki.map(function (m) {
+        return c.match(textUrl(w.id, m.no)).then(function (res) {
+          if (!res) return 0;
+          return res.blob().then(function (b) { return b.size || 1; });
+        });
+      }));
+    }).then(function (sizes) {
+      var n = 0, size = 0;
+      sizes.forEach(function (s) { if (s) { n++; size += s; } });
+      return { n: n, size: size, all: w.maki.length };
+    });
+  }
+
+  // いまの保存の状態を出す
+  function showSaved(w) {
+    var ui = uis[w.id];
+    if (!ui) return Promise.resolve();
+    ui.save.disabled = true; ui.del.disabled = true;
+    ui.state.textContent = '数えています…';
+    return scanSaved(w).then(function (r) {
+      ui = uis[w.id];
+      if (!ui || (dl && dl.id === w.id)) return;
+      ui.bar.classList.add('hidden');
+      ui.save.disabled = !!dl;
+      ui.del.disabled = !!dl || r.n === 0;
+      ui.save.textContent = r.n >= r.all ? '保存しなおす' : '全巻を保存';
+      ui.state.textContent = r.n === 0
+        ? 'まだ保存していません'
+        : (r.n >= r.all
+          ? '保存済み（全' + r.all + unitOf(w) + '・約' + size2(r.size) + '）'
+          : r.all + unitOf(w) + '中 ' + r.n + unitOf(w) + 'を保存しています（約' + size2(r.size) + '）');
+    }, function () {
+      ui = uis[w.id];
+      if (!ui) return;
+      ui.state.textContent = '保存の状態を調べられませんでした';
+      ui.save.disabled = false;
+    });
+  }
+
+  // 保存中の表示（シートを閉じて開きなおしても続きが見える）
+  function showRunning(w) {
+    var ui = uis[w.id];
+    if (!ui || !dl) return;
+    ui.bar.classList.remove('hidden');
+    ui.save.textContent = dl.stop ? '止めています…' : '中止';
+    ui.save.disabled = !!dl.stop;
+    ui.del.disabled = true;
+    ui.state.textContent = dl.done + ' / ' + dl.total + ' ' + unitOf(w);
+    ui.fill.style.width = Math.round(dl.done / dl.total * 100) + '%';
+  }
+
+  // 本文を1件ずつ取って、Service Worker と同じキャッシュに入れる
+  function saveWork(w) {
+    dl = { id: w.id, done: 0, bad: 0, total: w.maki.length, stop: false };
+    showRunning(w);
+    caches.open(CACHE_NAME).then(function (c) {
+      function next() {
+        var i = dl.done + dl.bad;
+        if (dl.stop || i >= dl.total) return Promise.resolve();
+        var url = textUrl(w.id, w.maki[i].no);
+        return fetch(url).then(function (res) {
+          if (!res || !res.ok) throw new Error('ng');
+          return c.put(url, res.clone());
+        }).then(function () { dl.done++; }, function () { dl.bad++; })
+          .then(function () { showRunning(w); return next(); });
+      }
+      return next();
+    }).then(function () {
+      var bad = dl.bad, stopped = dl.stop;
+      dl = null;
+      return showSaved(w).then(function () {
+        var ui = uis[w.id];
+        if (!ui) return;
+        if (stopped) ui.state.textContent += '　途中で止めました';
+        else if (bad) ui.state.textContent += '　' + bad + unitOf(w) + 'は取り込めませんでした';
+        showRoom();
+      });
+    }, function () {
+      dl = null;
+      showSaved(w);
+    });
+  }
+
+  // 本文だけを消す（骨組みは残す）
+  function dropWork(w) {
+    var ui = uis[w.id];
+    ui.save.disabled = true; ui.del.disabled = true;
+    ui.state.textContent = '消しています…';
+    caches.open(CACHE_NAME).then(function (c) {
+      return c.keys().then(function (ks) {
+        // 古い ?v= の本文も残っていれば一緒に消す
+        var mine = ks.filter(function (rq) { return rq.url.indexOf('/text/' + w.id + '/') >= 0; });
+        return Promise.all(mine.map(function (rq) { return c.delete(rq); }));
+      });
+    }).then(function () { showSaved(w).then(showRoom); }, function () { showSaved(w); });
+  }
+
+  // 設定シートの「オフラインで読む」を組み立てる
+  function renderSave() {
+    var box = $('dl-list');
+    box.textContent = '';
+    uis = {};
+    if (!canSave) {
+      box.appendChild(el('p', 'hint',
+        'この開き方では本文をまとめて保存できません。http から開くと使えます。'));
+      $('dl-hint').textContent = '';
+      return;
+    }
+    WORKS.forEach(function (w) {
+      var d = el('div', 'dl');
+      var top = el('div', 'dl-top');
+      top.appendChild(el('b', null, w.title));
+      var state = el('span', 'dl-state', '数えています…');
+      top.appendChild(state);
+      d.appendChild(top);
+      var bar = el('div', 'dl-bar hidden');
+      var fill = el('i');
+      bar.appendChild(fill);
+      d.appendChild(bar);
+      var btns = el('div', 'dl-btns');
+      var save = el('button', 'mini', '全巻を保存');
+      var del = el('button', 'mini', '保存した本文を消す');
+      btns.appendChild(save); btns.appendChild(del);
+      d.appendChild(btns);
+      box.appendChild(d);
+      uis[w.id] = { state: state, bar: bar, fill: fill, save: save, del: del };
+
+      save.onclick = function () {
+        if (dl && dl.id === w.id) { dl.stop = true; showRunning(w); return; }
+        if (dl) return;
+        saveWork(w);
+      };
+      del.onclick = function () {
+        if (dl) return;
+        if (!confirm(w.title + 'の保存した本文を消します。よろしいですか。')) return;
+        dropWork(w);
+      };
+
+      if (dl && dl.id === w.id) showRunning(w);
+      else showSaved(w);
+    });
+    showRoom();
+  }
+
+  // 端末の空きに触れる
+  function showRoom() {
+    var hint = $('dl-hint');
+    var base = '保存すると、通信のない場所でも、まだ開いていない巻まで読めます。';
+    hint.textContent = base;
+    if (navigator.storage && navigator.storage.estimate) {
+      navigator.storage.estimate().then(function (q) {
+        if (!q || !q.quota) return;
+        var used = q.usage || 0;
+        hint.textContent = base + 'この端末ではいま約' + size2(used) +
+          '使っていて、あと約' + size2(Math.max(q.quota - used, 0)) + '保存できます。';
+      }).catch(function () {});
+    }
   }
 
   /* ---------- 画面1 作品一覧 ---------- */
@@ -286,8 +469,8 @@
     $('set-lh').value = st.lh;
     var n = 0;
     for (var k in st.read) n++;
-    $('cache-hint').textContent =
-      '読んだ巻は ' + n + '。一度開いた巻の本文は端末に残るので、次からは通信がなくても読めます。';
+    $('read-hint').textContent = '読んだ巻は ' + n;
+    renderSave();
     $('setwrap').classList.remove('hidden');
   };
   $('btn-close').onclick = function () { $('setwrap').classList.add('hidden'); };
@@ -298,6 +481,7 @@
   $('btn-clear').onclick = function () {
     if (!confirm('読んだ巻の記録を消します。よろしいですか。')) return;
     st.read = {}; st.last = null; save(); route();
+    $('read-hint').textContent = '読んだ巻は 0';
   };
 
   /* ---------- 起動 ---------- */

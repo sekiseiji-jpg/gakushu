@@ -169,12 +169,33 @@ body{
 .sheet{
   background:var(--surface); width:100%; max-width:460px; border-radius:18px 18px 0 0;
   padding:20px 20px calc(20px + env(safe-area-inset-bottom));
+  max-height:88vh; overflow:auto;
 }
 .sheet h2{margin:0 0 14px; font-size:1.12rem; color:var(--c)}
 .row{display:flex; align-items:center; justify-content:space-between; gap:12px; padding:9px 0; border-bottom:1px solid var(--border)}
 .row select{font:inherit; font-size:.95rem; padding:6px 10px; border-radius:9px; border:1px solid var(--border); background:var(--surface2); color:var(--text)}
 .mini{font:inherit; font-size:.86rem; padding:6px 13px; border-radius:9px; border:1px solid var(--border); background:var(--surface2); color:var(--text); cursor:pointer}
 .hint{color:var(--muted); font-size:.8rem; margin:12px 0 0; line-height:1.7}
+.sect{margin-top:18px}
+.sect h3{
+  margin:0 0 4px; font-size:.84rem; font-weight:600; color:var(--c);
+  letter-spacing:.04em;
+}
+.sect .row:last-of-type{border-bottom:0}
+
+/* 本文のまとめ保存 */
+.dl{padding:10px 0; border-bottom:1px solid var(--border)}
+.dl-top{display:flex; align-items:baseline; justify-content:space-between; gap:10px}
+.dl-top b{font-size:.98rem}
+.dl-state{color:var(--muted); font-size:.78rem; text-align:right}
+.dl-bar{
+  height:6px; margin:9px 0 2px; border-radius:999px;
+  background:var(--soft); overflow:hidden;
+}
+.dl-bar i{display:block; height:100%; width:0; background:var(--c); transition:width .15s linear}
+.dl-btns{display:flex; gap:8px; margin-top:9px}
+.dl-btns .mini{flex:1}
+.dl-btns .mini:disabled{opacity:.45; cursor:default}
 .close{width:100%; margin-top:16px; padding:13px; border:0; border-radius:12px; background:var(--c); color:#fff; font:inherit; cursor:pointer}
 
 @media (max-width:480px){
