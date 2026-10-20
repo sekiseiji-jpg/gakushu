@@ -282,6 +282,17 @@
     h.appendChild(el('h2', null, w.title + '　' + '（' + w.yomi + '）'));
     h.appendChild(el('div', 'by', w.author + '　' + w.era));
     h.appendChild(el('div', 'ld', w.lead));
+    var au = HAS_AUTHORS && authorOfWork[w.id];
+    if (au) {
+      var ab = el('button', 'abtn');
+      ab.appendChild(portrait(au, 'tiny'));
+      var at = el('span', 'tx');
+      at.appendChild(el('b', null, au.name + 'について'));
+      at.appendChild(el('span', 'sub', au.lead));
+      ab.appendChild(at);
+      ab.onclick = function () { go('#a=' + au.id); };
+      h.appendChild(ab);
+    }
 
     // 本文の一覧（部ごとにまとめる）
     var mk = $('work-maki');
@@ -492,11 +503,120 @@
     flush();
   }
 
+
+  /* ---------- 画面4・5 文豪（data-authors.js があるときだけ） ---------- */
+  var HAS_AUTHORS = (typeof AUTHORS !== 'undefined') && AUTHORS.length > 0;
+  var authorById = {}, authorOfWork = {};
+  if (HAS_AUTHORS) {
+    AUTHORS.forEach(function (a) {
+      authorById[a.id] = a;
+      (a.works || []).forEach(function (wid) { authorOfWork[wid] = a; });
+    });
+  }
+  function portrait(a, cls) {
+    var im = document.createElement('img');
+    im.className = cls;
+    im.src = 'authors/' + a.id + '.jpg';
+    im.alt = a.name + 'の肖像';
+    im.loading = cls === 'pimg' ? 'lazy' : 'eager';   // 一覧の小さな写真だけ後回し
+    im.width = 240; im.height = 320;
+    return im;
+  }
+  function renderAuthors() {
+    $('authors-lead').textContent =
+      'この本棚に作品を収めた' + AUTHORS.length + '人です。生まれた年の順に並べています。';
+    var box = $('author-list');
+    box.textContent = '';
+    AUTHORS.forEach(function (a) {
+      var b = el('button', 'pcard');
+      b.appendChild(portrait(a, 'pimg'));
+      var t = el('div', 'pt');
+      t.appendChild(el('h2', null, a.name));
+      t.appendChild(el('div', 'ym', a.yomi));
+      t.appendChild(el('div', 'yr', a.born + '〜' + a.died));
+      t.appendChild(el('div', 'ld', a.lead));
+      t.appendChild(el('div', 'meta', '収録 ' + (a.works || []).length + '作品'));
+      b.appendChild(t);
+      b.onclick = function () { go('#a=' + a.id); };
+      box.appendChild(b);
+    });
+  }
+  function renderAuthor(a) {
+    var h = $('author-hero');
+    h.textContent = '';
+    h.appendChild(portrait(a, 'bimg'));
+    var t = el('div', 'ph');
+    t.appendChild(el('h2', null, a.name));
+    t.appendChild(el('div', 'ym', a.yomi + (a.real ? '　本名 ' + a.real : '')));
+    t.appendChild(el('div', 'yr', a.life));
+    t.appendChild(el('div', 'yr', '出身　' + a.home));
+    var tg = el('div', 'tags');
+    (a.tags || []).forEach(function (x) { tg.appendChild(el('span', 'tag', x)); });
+    t.appendChild(tg);
+    t.appendChild(el('p', 'ld', a.lead));
+    h.appendChild(t);
+
+    var d = $('author-body');
+    d.textContent = '';
+    function sect(title, cls) {
+      var s = el('section', 'asect' + (cls ? ' ' + cls : ''));
+      s.appendChild(el('h3', null, title));
+      d.appendChild(s);
+      return s;
+    }
+    function paras(s, xs) { xs.forEach(function (p) { s.appendChild(el('p', null, p)); }); }
+    paras(sect('略歴'), a.bio);
+    paras(sect('どういう人物か'), a.person);
+    paras(sect('どんな作品を書いたか'), a.style);
+
+    var s1 = sect('この本棚に入っている作品');
+    var g = el('div', 'awork');
+    (a.works || []).forEach(function (wid) {
+      var w = workById[wid];
+      if (!w) return;
+      var b = el('button', 'wbtn');
+      b.appendChild(el('span', 'ic', w.icon));
+      var tx = el('span', 'tx');
+      tx.appendChild(el('b', null, w.title));
+      tx.appendChild(el('span', 'sub', w.era + (w.genre ? '　' + w.genre : '')));
+      b.appendChild(tx);
+      b.onclick = function () { go('#w=' + w.id); };
+      g.appendChild(b);
+    });
+    s1.appendChild(g);
+
+    var s2 = sect('ほかの代表作');
+    var bl = el('div', 'books');
+    (a.books || []).forEach(function (bk) {
+      var r = el('div', 'bk');
+      var hd = el('div', 'bh');
+      hd.appendChild(el('b', null, bk.t));
+      hd.appendChild(el('span', 'y', bk.y));
+      r.appendChild(hd);
+      r.appendChild(el('p', null, bk.b));
+      bl.appendChild(r);
+    });
+    s2.appendChild(bl);
+
+    var s3 = sect('写真について', 'src');
+    s3.appendChild(el('p', null,
+      'ウィキメディア・コモンズ「' + a.photo.file + '」（' + a.photo.lic
+      + '）。著作権の保護期間が満了した写真です。'));
+  }
+
   /* ---------- 画面の切り替え ---------- */
   function show(v) {
-    ['works', 'work', 'maki'].forEach(function (k) {
-      $('view-' + k).classList.toggle('hidden', k !== v);
+    ['works', 'work', 'maki', 'authors', 'author'].forEach(function (k) {
+      var e = $('view-' + k);                 // 文豪の画面は無い分野もある
+      if (e) e.classList.toggle('hidden', k !== v);
     });
+    var sw = $('top-switch');
+    if (sw) {
+      sw.classList.toggle('hidden', v !== 'works' && v !== 'authors');
+      sw.querySelectorAll('[data-top]').forEach(function (b) {
+        b.classList.toggle('on', b.dataset.top === v);
+      });
+    }
   }
   function go(hash) {
     if (location.hash === hash) route();
@@ -512,10 +632,28 @@
   }
   function route() {
     var q = parse();
-    // ポータル検索からは #u=<作品id>-<巻番号> の形で来る
-    if (q.u && !q.w) {
-      var mm = /^(.+)-(\d+)$/.exec(q.u);
-      if (mm && workById[mm[1]]) { q.w = mm[1]; q.m = mm[2]; }
+    // ポータル検索からは #u=<作品id>-<巻番号>、文豪は #u=a-<文豪id> の形で来る
+    if (q.u && !q.w && !q.a) {
+      if (HAS_AUTHORS && q.u.indexOf('a-') === 0 && authorById[q.u.slice(2)]) {
+        q.a = q.u.slice(2);
+      } else {
+        var mu = /^(.+)-(\d+)$/.exec(q.u);
+        if (mu && workById[mu[1]]) { q.w = mu[1]; q.m = mu[2]; }
+      }
+    }
+    if (HAS_AUTHORS && q.a && authorById[q.a]) {
+      renderAuthor(authorById[q.a]);
+      show('author');
+      $('bar-title').textContent = authorById[q.a].name;
+      window.scrollTo(0, 0);
+      return;
+    }
+    if (HAS_AUTHORS && q.p === 'authors') {
+      renderAuthors();
+      show('authors');
+      $('bar-title').textContent = '文豪';
+      window.scrollTo(0, 0);
+      return;
     }
     var w = q.w && workById[q.w];
     if (w && q.m) {
@@ -546,9 +684,15 @@
   $('btn-back').onclick = function () {
     var q = parse();
     if (q.m) location.hash = '#w=' + q.w;
-    else if (q.w) location.hash = '';
+    else if (q.a) location.hash = '#p=authors';
+    else if (q.w || q.p) location.hash = '';
     else location.href = '../';
   };
+  if ($('top-switch')) {
+    $('top-switch').querySelectorAll('[data-top]').forEach(function (b) {
+      b.onclick = function () { go(b.dataset.top === 'authors' ? '#p=authors' : ''); };
+    });
+  }
 
   /* ---------- 設定 ---------- */
   $('btn-set').onclick = function () {

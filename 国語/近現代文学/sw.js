@@ -1,17 +1,45 @@
 // オフライン対応：骨組みは先に保存し、本文は読んだ章だけをあとから保存する。
 // 全章をまとめて保存する操作は設定シートにあり、ページ側から同じキャッシュに入れる（app.js）。
 // ファイルを更新したときは CACHE の番号を上げる（index.html の ?v= と同じ番号にする）。
-const CACHE = 'kingendai-v1';          // 骨組み（版を上げると入れ替わる）
+const CACHE = 'kingendai-v2';          // 骨組み（版を上げると入れ替わる）
 const TEXTS = 'kingendai-text';     // 本文（版を上げても残す）
 const SHELL = [
   './',
   'index.html',
-  'style.css?v=1',
-  'data-works.js?v=1',
-  'app.js?v=1',
+  'style.css?v=2',
+  'data-works.js?v=2',
+  'data-authors.js?v=2',
+  'app.js?v=2',
   'manifest.webmanifest',
   'icon-192.png',
   'icon-512.png',
+  // 文豪の肖像（26枚で約390KB）。通信がなくても紹介を開けるように先に入れておく。
+  'authors/akutagawa.jpg',
+  'authors/ango.jpg',
+  'authors/arishima.jpg',
+  'authors/dazai.jpg',
+  'authors/doppo.jpg',
+  'authors/futabatei.jpg',
+  'authors/hori.jpg',
+  'authors/ichiyo.jpg',
+  'authors/kajii.jpg',
+  'authors/kan.jpg',
+  'authors/katai.jpg',
+  'authors/kenji.jpg',
+  'authors/kyoka.jpg',
+  'authors/kyusaku.jpg',
+  'authors/nakajima.jpg',
+  'authors/nankichi.jpg',
+  'authors/ogai.jpg',
+  'authors/rampo.jpg',
+  'authors/sakutaro.jpg',
+  'authors/shiki.jpg',
+  'authors/soseki.jpg',
+  'authors/takiji.jpg',
+  'authors/takuboku.jpg',
+  'authors/tanizaki.jpg',
+  'authors/torahiko.jpg',
+  'authors/toson.jpg',
 ];
 
 self.addEventListener('install', (e) => {

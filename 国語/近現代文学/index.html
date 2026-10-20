@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#34516e">
-<meta name="description" content="近現代文学を青空文庫の本文で通して読めるアプリ。章ごとに要約つき。夏目漱石・芥川龍之介ら30作品を収録。">
+<meta name="description" content="近現代文学を青空文庫の本文で通して読めるアプリ。章ごとに要約と、文豪26人の紹介つき。夏目漱石・芥川龍之介ら30作品を収録。">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="近現代文学">
@@ -12,7 +12,7 @@
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
-<link rel="stylesheet" href="style.css?v=1">
+<link rel="stylesheet" href="style.css?v=2">
 </head>
 <body>
 
@@ -24,6 +24,11 @@
 
 <main class="wrap">
 
+  <div class="topsw" id="top-switch">
+    <button class="tsw on" data-top="works">作品で読む</button>
+    <button class="tsw" data-top="authors">文豪から見る</button>
+  </div>
+
   <!-- 作品一覧 -->
   <section id="view-works" class="view">
     <p class="lead" id="works-lead"></p>
@@ -32,12 +37,32 @@
       <b>このアプリについて</b>
       <ul>
         <li>本文は青空文庫の底本をもとにした、著作権の切れている作品だけを載せています。</li>
+        <li>「文豪から見る」に切り替えると、26人の顔写真・略歴・ほかの代表作を見られます。</li>
         <li>章を開くと、まず要約が出ます。あらすじをつかんでから本文に入れます。</li>
         <li>難しい漢字にはふりがなが付きます。文字の大きさや行間は設定（⚙）で変えられます。</li>
         <li>本文は開いた章だけを読み込みます。読んだ章は端末に残るので、次からは通信がなくても開けます。</li>
         <li>通信のない場所で通して読むときは、設定（⚙）から全章をまとめて保存しておいてください。</li>
       </ul>
     </div>
+  </section>
+
+  <!-- 文豪一覧 -->
+  <section id="view-authors" class="view hidden">
+    <p class="lead" id="authors-lead"></p>
+    <div id="author-list" class="pgrid"></div>
+    <div class="note">
+      <b>写真について</b>
+      <ul>
+        <li>肖像写真はウィキメディア・コモンズから、著作権の保護期間が満了したものだけを収めています。</li>
+        <li>それぞれの出どころは、文豪のページの下に書いてあります。</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- 文豪 -->
+  <section id="view-author" class="view hidden">
+    <div class="hero ahero" id="author-hero"></div>
+    <div id="author-body"></div>
   </section>
 
   <!-- 作品の扉 -->
@@ -100,7 +125,8 @@
   </div>
 </div>
 
-<script src="data-works.js?v=1"></script>
-<script src="app.js?v=1"></script>
+<script src="data-works.js?v=2"></script>
+<script src="data-authors.js?v=2"></script>
+<script src="app.js?v=2"></script>
 </body>
 </html>

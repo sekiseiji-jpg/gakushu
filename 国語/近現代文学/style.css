@@ -234,3 +234,87 @@ body{
   font-size:.47em; color:var(--muted); font-weight:400;
   letter-spacing:0; line-height:1.1; user-select:none;
 }
+
+/* ---- 文豪 ---- */
+.topsw{display:flex; gap:8px; margin:0 0 14px}
+.tsw{
+  flex:1; padding:11px 10px; border:1px solid var(--border); border-radius:11px;
+  background:var(--surface); color:var(--muted); font-family:inherit; font-size:.95em;
+  cursor:pointer;
+}
+.tsw.on{background:var(--c); color:#fff; border-color:var(--c); font-weight:600}
+
+.pgrid{display:grid; grid-template-columns:repeat(auto-fill,minmax(250px,1fr)); gap:12px}
+.pcard{
+  display:flex; gap:12px; text-align:left; align-items:flex-start;
+  padding:12px; border:1px solid var(--border); border-radius:13px;
+  background:var(--surface); color:inherit; font-family:inherit; cursor:pointer;
+}
+.pcard:hover{border-color:var(--c)}
+.pimg{
+  width:72px; height:96px; object-fit:cover; border-radius:7px; flex:none;
+  background:var(--soft); filter:saturate(.25);
+}
+.pcard .pt{min-width:0}
+.pcard h2{margin:0; font-size:1.06em; letter-spacing:.03em}
+.pcard .ym{color:var(--muted); font-size:.78em; margin-top:1px}
+.pcard .yr{color:var(--c); font-size:.8em; margin-top:4px}
+.pcard .ld{font-size:.85em; margin-top:6px; line-height:1.6; color:var(--text)}
+.pcard .meta{font-size:.76em; color:var(--muted); margin-top:6px}
+
+.ahero{display:flex; gap:18px; align-items:flex-start}
+.ahero .bimg{
+  width:150px; height:200px; object-fit:cover; border-radius:10px; flex:none;
+  background:var(--soft); filter:saturate(.25);
+}
+.ahero .ph{min-width:0}
+.ahero h2{margin:0 0 2px; font-size:1.4em}
+.ahero .ym{color:var(--muted); font-size:.84em}
+.ahero .yr{color:var(--muted); font-size:.84em; margin-top:3px}
+.ahero .ld{margin:10px 0 0; font-size:.95em; line-height:1.8}
+.tags{display:flex; flex-wrap:wrap; gap:6px; margin-top:9px}
+.tag{
+  font-size:.74em; padding:3px 9px; border-radius:999px;
+  background:var(--soft); color:var(--c);
+}
+
+.asect{
+  margin:16px 0; padding:16px 18px; background:var(--surface);
+  border:1px solid var(--border); border-radius:13px;
+}
+.asect h3{
+  margin:0 0 10px; font-size:.95em; color:var(--c); letter-spacing:.06em;
+  padding-left:.55em; border-left:3px solid var(--c);
+}
+.asect p{margin:0 0 .9em; line-height:1.95; font-size:.95em}
+.asect p:last-child{margin-bottom:0}
+.asect.src p{color:var(--muted); font-size:.84em; line-height:1.8}
+
+.awork{display:flex; flex-direction:column; gap:8px}
+.wbtn, .abtn{
+  display:flex; gap:11px; align-items:center; text-align:left; width:100%;
+  padding:11px 13px; border:1px solid var(--border); border-radius:11px;
+  background:var(--surface2); color:inherit; font-family:inherit; cursor:pointer;
+}
+.wbtn:hover, .abtn:hover{border-color:var(--c)}
+.wbtn .ic{font-size:1.3em; flex:none}
+.wbtn .tx, .abtn .tx{display:flex; flex-direction:column; min-width:0}
+.wbtn .sub, .abtn .sub{color:var(--muted); font-size:.8em; margin-top:2px}
+.abtn{margin-top:14px}
+.abtn .tiny{
+  width:40px; height:53px; object-fit:cover; border-radius:5px; flex:none;
+  background:var(--soft); filter:saturate(.25);
+}
+
+.books{display:grid; grid-template-columns:repeat(auto-fill,minmax(240px,1fr)); gap:10px}
+.bk{padding:11px 13px; background:var(--surface2); border:1px solid var(--border); border-radius:11px}
+.bh{display:flex; align-items:baseline; gap:8px}
+.bh b{font-size:.98em}
+.bh .y{color:var(--muted); font-size:.76em}
+.bk p{margin:5px 0 0; font-size:.85em; line-height:1.7; color:var(--muted)}
+
+@media (max-width:560px){
+  .ahero{gap:13px}
+  .ahero .bimg{width:108px; height:144px}
+  .ahero h2{font-size:1.2em}
+}

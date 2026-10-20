@@ -73,6 +73,15 @@ for (const sub of SUBJECTS) {
         });
       }
     }
+    // 文豪紹介があれば、人名でも引けるようにする（開くときは #u=a-<文豪id>）
+    const ma = load(path.join(d, 'data-authors.js'), 'AUTHORS');
+    for (const a of (ma && ma.AUTHORS) || []) {
+      units.push({
+        s: sub, f: name, u: url, id: 'a-' + a.id,
+        n: a.name + '（文豪）', y: a.yomi || '', p: a.life || '', c: a.lead || '', i: '👤',
+        w: [a.name, a.real || a.name].concat((a.books || []).map((b) => b.t)),
+      });
+    }
   }
 }
 

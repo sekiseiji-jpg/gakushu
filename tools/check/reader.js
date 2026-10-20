@@ -137,7 +137,58 @@ function check(rel) {
       }
     });
   }
-  return { ng, n: { works: WORKS.length, maki: nMaki, chars: nChar, paras: nPara } };
+  // ---- 文豪（data-authors.js がある分野だけ） ----
+  const af = path.join(dir, 'data-authors.js');
+  let nAuth = 0;
+  if (fs.existsSync(af)) {
+    const { AUTHORS } = load(af);
+    nAuth = AUTHORS.length;
+    const names = new Set(WORKS.map((w) => w.author));
+    const seen = new Set();
+    const aid = new Set();
+    for (const a of AUTHORS) {
+      const at = a.id;
+      if (aid.has(a.id)) say(`文豪idの重複: ${a.id}`);
+      aid.add(a.id);
+      for (const k of ['name', 'yomi', 'life', 'home', 'lead']) {
+        if (!a[k]) say(`${at}: ${k} がない`);
+      }
+      if (!names.has(a.name)) say(`${at}: ${a.name} という著者の作品が WORKS にない`);
+      seen.add(a.name);
+      if (!(a.born < a.died && a.born > 1700 && a.died < 2100)) say(`${at}: 生没年がおかしい`);
+      for (const k of ['bio', 'person', 'style', 'books', 'tags', 'works']) {
+        if (!Array.isArray(a[k]) || !a[k].length) say(`${at}: ${k} がない`);
+      }
+      const mine = WORKS.filter((w) => w.author === a.name).map((w) => w.id).sort().join(',');
+      if ((a.works || []).slice().sort().join(',') !== mine) {
+        say(`${at}: works が WORKS と合わない（${(a.works || []).join(',')} / ${mine}）`);
+      }
+      for (const b of a.books || []) {
+        if (!b.t || !b.y || !b.b) say(`${at}: 代表作の項目が欠けている`);
+      }
+      // 文章に他言語がまぎれていないか
+      for (const t of [a.lead, a.life, a.home].concat(a.bio, a.person, a.style,
+                       (a.books || []).map((b) => b.b))) {
+        if (NG_SCRIPT.test(t)) say(`${at}: 文章に日本語以外の文字 ${t.slice(0, 30)}`);
+        const lat = t.match(LATIN_WORD);
+        if (lat) say(`${at}: 文章に英単語 ${lat.join(',')}`);
+      }
+      // 肖像
+      const img = path.join(dir, 'authors', a.id + '.jpg');
+      if (!fs.existsSync(img)) say(`${at}: 肖像 authors/${a.id}.jpg がない`);
+      else if (fs.statSync(img).size > 60 * 1024) say(`${at}: 肖像が大きすぎる`);
+      if (!a.photo || !/^public domain/i.test(a.photo.lic || '')) {
+        say(`${at}: 肖像の権利が「Public domain」でない`);
+      }
+      if (!a.photo || !a.photo.file || !a.photo.page) say(`${at}: 肖像の出どころがない`);
+    }
+    for (const n of names) if (!seen.has(n)) say(`著者 ${n} の紹介がない`);
+    // 余分な画像が残っていないか
+    const dirImgs = fs.readdirSync(path.join(dir, 'authors')).filter((f) => f.endsWith('.jpg'));
+    for (const f of dirImgs) if (!aid.has(f.slice(0, -4))) say(`使われていない肖像: ${f}`);
+  }
+
+  return { ng, n: { works: WORKS.length, maki: nMaki, chars: nChar, paras: nPara, auth: nAuth } };
 }
 
 const want = process.argv.slice(2);
@@ -152,7 +203,8 @@ for (const rel of list) {
     for (const m of r.ng.slice(0, 40)) console.log('    ' + m);
     if (r.ng.length > 40) console.log(`    …ほか ${r.ng.length - 40} 件`);
   } else {
-    console.log(`✓ ${rel.padEnd(18)} ${s.works}作品 ${s.maki}章 ${s.paras}段 ${s.chars.toLocaleString('ja-JP')}字`);
+    console.log(`✓ ${rel.padEnd(18)} ${s.works}作品 ${s.maki}章 ${s.paras}段 `
+      + `${s.chars.toLocaleString('ja-JP')}字` + (s.auth ? ` 文豪${s.auth}人` : ''));
   }
 }
 if (bad) { console.log(`\n読み物: ${bad}件の問題`); process.exit(1); }
