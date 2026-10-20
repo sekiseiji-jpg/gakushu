@@ -1,6 +1,6 @@
 // オフライン対応: アプリのファイルはネット優先で取得し、つながらないときはキャッシュを使う
 // ファイルを更新したら CACHE の番号と、index.html の ?v= の番号を一緒に上げる
-const CACHE = 'seikei-v6';
+const CACHE = 'seikei-v7';
 const FILES = [
   './',
   'index.html',

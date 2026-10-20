@@ -3,7 +3,7 @@
 //   minlen … 本文中のラテン文字を何文字から疑うか。省略するとフォルダのパスから
 //             教科を判定して既定値（社会=2／理科・数学・国語=4／英語=999）を使う。
 const path = require('path');
-const { load, minlenFor, label } = require('./lib.js');
+const { load, minlenFor, label, expRefErrors } = require('./lib.js');
 
 const D = process.argv[2];
 if (!D) { console.log('使い方: node tools/check/chk.js <分野フォルダ> [minlen]'); process.exit(2); }
@@ -72,9 +72,11 @@ q.forEach((x) => {
   if (!(x.lv >= 1 && x.lv <= 3)) errs.push('lvが不正: ' + x.id);
   if (!ids.has(x.era)) errs.push('存在しない単元: ' + x.id + ' -> ' + x.era);
   if (APP && APP.cats && !APP.cats.includes(x.cat)) errs.push('分野区分が不正: ' + x.id + ' -> ' + x.cat);
-  // 解説の丸数字と a の一致
+  // 解説の丸数字と a の一致（冒頭の「正解は③」「③が正しい」）
   const m = String(x.exp).match(/正解は([①-⑥])/) || String(x.exp).match(/^([①-⑥])が(?:正しい|誤り)/);
   if (m && C.indexOf(m[1]) !== x.a) errs.push('解説の正解番号とaが不一致: ' + x.id + '（解説=' + m[1] + ' / a=' + C[x.a] + '）');
+  // sel・src は解説の途中に出てくる丸数字も見る（lib.js の expRefErrors）
+  expRefErrors(x).forEach((e) => errs.push(e + ': ' + x.id));
   // 組合せの選択肢には2通りある。
   //   ['a・c','a・d','b・c','b・d'] … {a,b} から1つ・{c,d} から1つ。この型だけ構造規則が効く
   //   ['a・b','a・d','b・c','c・d'] … 社会4分野が使う型。規則が違うので形だけ見る
@@ -104,9 +106,10 @@ if (q.length) {
   Object.entries(dist).forEach(([ty2, d]) => {
     const n = Object.values(d).reduce((a, b) => a + b, 0), mx = Math.max(...Object.values(d));
     console.log('  正解位置 ' + ty2 + ': ' + JSON.stringify(d));
-    // cmb と ord はシャッフルされないので、ここが極端に偏ると学習者に見えてしまう。
-    // 細かい基準は bias.js（cmb 35%／ord 30%）が見る。ここは明らかな偏りだけ落とす。
-    if ((ty2 === 'cmb' || ty2 === 'ord') && n >= 6 && mx > n * 0.5) errs.push(ty2 + ' の正解位置が偏っている（' + mx + '/' + n + '）');
+    // cmb と ord はシャッフルされず、sel と src も設定でシャッフルを切ると
+    // データの並びがそのまま出る。細かい基準は bias.js（sel・src・cmb 35%／ord 30%）が
+    // 見るので、ここは明らかな偏りだけ落とす。
+    if (n >= 6 && mx > n * 0.5) errs.push(ty2 + ' の正解位置が偏っている（' + mx + '/' + n + '）');
   });
 }
 console.log(errs.length ? '✗ ERRORS:\n' + errs.join('\n') : '✓ 検証OK');

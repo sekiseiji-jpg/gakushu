@@ -1,4 +1,4 @@
-// 全19分野に chk・bias・xref・xord をかけて、最後に要約を出す。
+// 全19分野に chk・bias・xref・xord・xsel をかけて、最後に要約を出す。
 // 使い方: node tools/check/all.js [-v]      -v をつけると chk の内訳もすべて表示する
 const path = require('path');
 const { execFileSync } = require('child_process');
@@ -48,15 +48,20 @@ console.log('\n=== xord（配列の解説と正解） ===');
 const ro = run('xord.js', []);
 process.stdout.write(ro.out);
 
+console.log('\n=== xsel（正誤判定・資料の解説の丸数字と正解） ===');
+const rs = run('xsel.js', []);
+process.stdout.write(rs.out);
+
 // ---- 要約 ----
 const nx = Number((rx.out.match(/矛盾 (\d+)問/) || [0, 0])[1]);
 const no = Number((ro.out.match(/要確認 (\d+)問/) || [0, 0])[1]);
+const ns = Number((rs.out.match(/矛盾 (\d+)問/) || [0, 0])[1]);
 const okChk = APPS.length - ngChk.length;
 
 console.log('\n=== まとめ ===');
 console.log(APPS.length + '分野 ' + (ngChk.length ? okChk + '分野OK・' + ngChk.length + '分野NG（' + ngChk.join(' ') + '）' : '検証OK') +
-  ' ／ 矛盾' + (nx + no) + (rb.code ? ' ／ 偏り警告あり' : ''));
+  ' ／ 矛盾' + (nx + no + ns) + (rb.code ? ' ／ 偏り警告あり' : ''));
 
-const bad = ngChk.length || nx || no || rb.code;
+const bad = ngChk.length || nx || no || ns || rb.code;
 if (bad) { console.log('✗ 直すところがあります'); process.exit(1); }
 console.log('✓ すべて問題なし');
