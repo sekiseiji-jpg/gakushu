@@ -1,0 +1,62 @@
+// 全18分野に chk・bias・xref・xord をかけて、最後に要約を出す。
+// 使い方: node tools/check/all.js [-v]      -v をつけると chk の内訳もすべて表示する
+const path = require('path');
+const { execFileSync } = require('child_process');
+const { APPS, ROOT, label, pad, minlenFor } = require('./lib.js');
+
+const verbose = process.argv.includes('-v');
+const here = (f) => path.join(__dirname, f);
+
+// 子プロセスを動かして「出力・終了コード」を返す（終了コードが非0でも例外にしない）
+function run(script, args) {
+  try {
+    return { out: execFileSync(process.execPath, [here(script)].concat(args), { encoding: 'utf8' }), code: 0 };
+  } catch (e) {
+    return { out: (e.stdout || '') + (e.stderr || ''), code: e.status === undefined ? 1 : e.status };
+  }
+}
+
+// ---- 1分野ずつ chk ----
+console.log('=== chk（件数・ID・正解インデックス・分野区分・言語チェック） ===');
+const ngChk = [];
+for (const app of APPS) {
+  const dir = path.join(ROOT, app);
+  const r = run('chk.js', [dir]);
+  const head = (r.out.match(/^■.*$/m) || [''])[0];
+  if (r.code === 0) {
+    // ■行は「■ 日本史  単元15 …」の形。分野名は左に出しているので本数だけ見せる。
+    console.log(pad('✓ ' + label(dir), 16) + '(minlen=' + minlenFor(dir) + ')  ' + head.replace(/^■\s*\S+\s*/, ''));
+    if (verbose) console.log(r.out.replace(/^/gm, '    '));
+  } else {
+    ngChk.push(label(dir));
+    console.log('✗ ' + label(dir));
+    console.log(r.out.replace(/^/gm, '    '));
+  }
+}
+
+// ---- 偏り ----
+console.log('\n=== bias（cmb・ord の正解位置） ===');
+const rb = run('bias.js', []);
+process.stdout.write(rb.out);
+
+// ---- 解説と正解の突き合わせ ----
+console.log('\n=== xref（組合せの解説と正解） ===');
+const rx = run('xref.js', []);
+process.stdout.write(rx.out);
+
+console.log('\n=== xord（配列の解説と正解） ===');
+const ro = run('xord.js', []);
+process.stdout.write(ro.out);
+
+// ---- 要約 ----
+const nx = Number((rx.out.match(/矛盾 (\d+)問/) || [0, 0])[1]);
+const no = Number((ro.out.match(/要確認 (\d+)問/) || [0, 0])[1]);
+const okChk = APPS.length - ngChk.length;
+
+console.log('\n=== まとめ ===');
+console.log(APPS.length + '分野 ' + (ngChk.length ? okChk + '分野OK・' + ngChk.length + '分野NG（' + ngChk.join(' ') + '）' : '検証OK') +
+  ' ／ 矛盾' + (nx + no) + (rb.code ? ' ／ 偏り警告あり' : ''));
+
+const bad = ngChk.length || nx || no || rb.code;
+if (bad) { console.log('✗ 直すところがあります'); process.exit(1); }
+console.log('✓ すべて問題なし');
