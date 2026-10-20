@@ -65,6 +65,8 @@ function check(rel) {
       // 文章に日本語以外がまぎれていないか（写真のファイル名は除く）
       const texts = [f.t, f.cap || ''];
       if (f.k === 'table') texts.push(...f.head, ...f.rows.flat());
+      // 図の中の文字も見る（タグを外してから調べる）
+      if (f.k === 'svg' || f.k === 'map') texts.push((f.svg || '').replace(/<[^>]*>/g, ' '));
       for (const t of texts) {
         if (NG_SCRIPT.test(t)) say(`${at}: 日本語以外の文字 ${t.slice(0, 30)}`);
       }
