@@ -1,0 +1,50 @@
+// オフライン対応：骨組みは先に保存し、本文は読んだ巻だけをあとから保存する。
+// ファイルを更新したときは CACHE の番号を上げる（index.html の ?v= と同じ番号にする）。
+const CACHE = 'kotenbungaku-v1';
+const SHELL = [
+  './',
+  'index.html',
+  'style.css?v=1',
+  'data-works.js?v=1',
+  'app.js?v=1',
+  'manifest.webmanifest',
+  'icon-192.png',
+  'icon-512.png',
+];
+
+self.addEventListener('install', (e) => {
+  e.waitUntil(
+    caches.open(CACHE)
+      .then((c) => c.addAll(SHELL))
+      .then(() => self.skipWaiting()),
+  );
+});
+
+self.addEventListener('activate', (e) => {
+  e.waitUntil(
+    caches.keys()
+      .then((ks) => Promise.all(ks.filter((k) => k !== CACHE).map((k) => caches.delete(k))))
+      .then(() => self.clients.claim()),
+  );
+});
+
+self.addEventListener('fetch', (e) => {
+  if (e.request.method !== 'GET') return;
+  const url = new URL(e.request.url);
+  if (url.origin !== location.origin) return;
+
+  // 本文は量が多いので、先読みせず、読んだものだけを保存する
+  const isText = url.pathname.indexOf('/text/') >= 0;
+  e.respondWith(
+    caches.match(e.request, { ignoreSearch: !isText }).then((hit) => {
+      if (hit) return hit;
+      return fetch(e.request).then((res) => {
+        if (res && res.ok) {
+          const copy = res.clone();
+          caches.open(CACHE).then((c) => c.put(e.request, copy));
+        }
+        return res;
+      });
+    }),
+  );
+});

@@ -48,6 +48,32 @@ for (const sub of SUBJECTS) {
   }
 }
 
+// 読み物アプリ（data-works.js を持つもの）。巻を単元と同じ形で並べ、作品名で引けるようにする。
+for (const sub of SUBJECTS) {
+  const dir = path.join(BASE, sub);
+  if (!fs.existsSync(dir)) continue;
+  for (const name of fs.readdirSync(dir)) {
+    if (name.startsWith('.')) continue;
+    const d = path.join(dir, name);
+    if (!fs.statSync(d).isDirectory()) continue;
+    const m = load(path.join(d, 'data-works.js'), 'WORKS,APP');
+    if (!m || !m.WORKS || !m.WORKS.length) continue;
+    const url = encodeURIComponent(sub) + '/' + encodeURIComponent(name) + '/';
+    const nMaki = m.WORKS.reduce((a, w) => a + w.maki.length, 0);
+    fields.push({ s: sub, f: name, t: (m.APP && m.APP.title) || name,
+                  i: (m.APP && m.APP.icon) || '📕', u: url, n: nMaki });
+    for (const w of m.WORKS) {
+      for (const k of w.maki) {
+        units.push({
+          s: sub, f: name, u: url, id: w.id + '-' + k.no,
+          n: k.name, y: k.yomi || '', p: w.title + '　第' + k.no + '巻', c: k.lead || '', i: w.icon || '',
+          w: [w.title, w.author],
+        });
+      }
+    }
+  }
+}
+
 const out = '/* 自動生成 — tools/tpl/mkindex.js で作り直す。手で編集しない。\n'
   + '   ポータルと教科ページの検索が読む。単元の見出しと用語名だけを収める。 */\n'
   + 'const SEARCH_FIELDS = ' + JSON.stringify(fields, null, 0) + ';\n'

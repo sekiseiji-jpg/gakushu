@@ -191,11 +191,29 @@ def henbou(d, cx, cy, r, t):
         yy=y0+s*i//4
         d.line([rx0, yy, rx1, yy], fill=FG, width=lw)
 
+def shiori(d, cx, cy, r, t):
+    # しおりを挟んだ本（古典文学）。縦長の本に、上から垂れた細いしおり。
+    w=int(r*1.30); h=int(r*1.66)
+    x0, y0 = cx-w//2, cy-h//2
+    d.rectangle([x0, y0, x0+w, y0+h], outline=FG, width=t)
+    lw=max(1,int(t*0.7))
+    for i in (1, 2, 3):                                # 本文の行
+        yy=y0+h*i//5
+        d.line([x0+int(w*0.16), yy, x0+int(w*0.62), yy], fill=FG, width=lw)
+    bx=x0+int(w*0.80)                                  # しおり
+    bw=max(2,int(r*0.15)); by=y0+int(h*0.74)
+    d.rectangle([bx-bw, y0, bx+bw, by], fill=FG)
+    bgc=d._image.getpixel((0,0))                   # しおりの切れこみは地の色で抜く
+    d.polygon([(bx-bw, by), (bx+bw, by), (bx, by-int(r*0.18))], fill=bgc)
+
 SHAPES={'物理':atom, '化学':flask, '生物':dna, '地学':earth, '倫理':enso,
         '数学ⅠA':graph, '数学ⅡB':sigma, '数学ⅢC':integral,
         '現代文':genkou, '古文':makimono, '漢文':fude,
         '英文法':bunkei, '英文読解':dokkai, '語彙と表現':jisho,
         '漢検2級':henbou}
+
+# apps.json に載せない、専用のつくりのアプリ（出力先は <教科>/<分野>）
+READERS=[('国語', '古典文学', shiori, '#7a3b6a')]
 
 def hex2rgb(h):
     h=h.lstrip('#'); return tuple(int(h[i:i+2],16) for i in (0,2,4))
@@ -214,7 +232,7 @@ def make(name, bg, size, path, maskable=False):
 if __name__ == '__main__':
     conf=json.load(open(os.path.join(SP,'apps.json'), encoding='utf-8'))
     want=set(sys.argv[1:])     # 例: python mkicons.py 倫理 （無指定なら全分野）
-    unknown=want-{c['dir'] for c in conf}
+    unknown=want-{c['dir'] for c in conf}-{r[1] for r in READERS}   # READERS は apps.json に載せない
     if unknown: sys.exit('apps.json にない分野: ' + '、'.join(sorted(unknown)))
     for c in conf:
         if want and c['dir'] not in want: continue
@@ -223,3 +241,13 @@ if __name__ == '__main__':
         for sz, fn, mk in ((192,'icon-192.png',False),(512,'icon-512.png',False),(512,'icon-maskable-512.png',True),(180,'apple-touch-icon.png',False)):
             make(c['dir'], hex2rgb(c['color']), sz, os.path.join(out, fn), mk)
         print('icons:', os.path.relpath(out, BASE))
+
+    for subject, name, shape, color in READERS:
+        if name in sys.argv[1:] or len(sys.argv) == 1:
+            SHAPES[name] = shape
+            out = os.path.join(BASE, subject, name)
+            if not os.path.isdir(out):
+                continue
+            for sz, fn, mk in ((192,'icon-192.png',False),(512,'icon-512.png',False),(512,'icon-maskable-512.png',True),(180,'apple-touch-icon.png',False)):
+                make(name, hex2rgb(color), sz, os.path.join(out, fn), mk)
+            print('icons:', os.path.relpath(out, BASE))
