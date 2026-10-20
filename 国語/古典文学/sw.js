@@ -1,13 +1,13 @@
 // オフライン対応：骨組みは先に保存し、本文は読んだ巻だけをあとから保存する。
 // 全巻をまとめて保存する操作は設定シートにあり、ページ側から同じキャッシュに入れる（app.js）。
 // ファイルを更新したときは CACHE の番号を上げる（index.html の ?v= と同じ番号にする）。
-const CACHE = 'kotenbungaku-v2';
+const CACHE = 'kotenbungaku-v3';
 const SHELL = [
   './',
   'index.html',
-  'style.css?v=2',
-  'data-works.js?v=2',
-  'app.js?v=2',
+  'style.css?v=3',
+  'data-works.js?v=3',
+  'app.js?v=3',
   'manifest.webmanifest',
   'icon-192.png',
   'icon-512.png',
@@ -35,9 +35,11 @@ self.addEventListener('fetch', (e) => {
   if (url.origin !== location.origin) return;
 
   // 本文は量が多いので、先読みせず、読んだものだけを保存する
-  const isText = url.pathname.indexOf('/text/') >= 0;
+  // ?v= は更新の目印なので、クエリを無視してよいのはページ本体を開くときだけ。
+  // ここを無視すると、版を上げても古い app.js などが返りつづける。
+  const loose = e.request.mode === 'navigate';
   e.respondWith(
-    caches.match(e.request, { ignoreSearch: !isText }).then((hit) => {
+    caches.match(e.request, { ignoreSearch: loose }).then((hit) => {
       if (hit) return hit;
       return fetch(e.request).then((res) => {
         if (res && res.ok) {

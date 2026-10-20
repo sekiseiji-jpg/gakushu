@@ -342,11 +342,25 @@
 
   /* ---------- 画面3 巻 ---------- */
   var curMaki = null, curType = 'yaku';
+  // その巻にその種類の本文があるか（chars は [訳の字数, 原文の字数]）
+  function has(m, type) {
+    return (type === 'yaku' ? m.chars[0] : m.chars[1]) > 0;
+  }
+  function firstType(m) { return has(m, 'yaku') ? 'yaku' : 'genbun'; }
+  function noteOf(w, type) {
+    var label = type === 'genbun' ? '原文' : '現代語訳';
+    for (var i = 0; i < w.sources.length; i++) {
+      if (w.sources[i].label === label) {
+        return w.sources[i].by === '―' ? '' : label + '：' + w.sources[i].by;
+      }
+    }
+    return '';
+  }
   function renderMaki(w, m, type) {
     curWork = w; curMaki = m; curType = type;
     var h = $('maki-head');
     h.textContent = '';
-    h.appendChild(el('div', 'no', w.title + '　第' + m.no + '帖'));
+    h.appendChild(el('div', 'no', w.title + '　第' + m.no + (w.unit || '巻')));
     var t = el('h2', null, m.name);
     h.appendChild(t);
     h.appendChild(el('div', 'ym', m.yomi));
@@ -356,13 +370,15 @@
     s.appendChild(el('b', null, 'この巻のあらすじ'));
     m.summary.forEach(function (p) { s.appendChild(el('p', null, p)); });
 
+    // その巻にある本文だけボタンを出す（作品によって訳だけ・原文だけのものがある）
+    var both = has(m, 'yaku') && has(m, 'genbun');
     document.querySelectorAll('[data-text]').forEach(function (b) {
+      var avail = has(m, b.dataset.text);
+      b.classList.toggle('hidden', !avail || !both);
       b.classList.toggle('on', b.dataset.text === type);
       b.onclick = function () { go('#w=' + w.id + '&m=' + m.no + '&t=' + b.dataset.text); };
     });
-    $('sw-note').textContent = type === 'genbun'
-      ? '原文は底本の翻字です。句読点と濁点は付いていません。'
-      : '与謝野晶子訳です。';
+    $('sw-note').textContent = noteOf(w, type);
 
     var body = $('maki-body');
     body.className = 'body' + (type === 'genbun' ? ' genbun' : '');
@@ -384,10 +400,11 @@
     var pg = $('maki-pager');
     pg.textContent = '';
     var i = w.maki.indexOf(m);
-    var prev = el('button', null, i > 0 ? '◀ 第' + w.maki[i - 1].no + '帖　' + w.maki[i - 1].name : '◀ 前の巻');
+    var U = w.unit || '巻';
+    var prev = el('button', null, i > 0 ? '◀ 第' + w.maki[i - 1].no + U + '　' + w.maki[i - 1].name : '◀ 前へ');
     prev.disabled = i <= 0;
     prev.onclick = function () { go('#w=' + w.id + '&m=' + w.maki[i - 1].no + '&t=' + type); };
-    var next = el('button', null, i < w.maki.length - 1 ? '第' + w.maki[i + 1].no + '帖　' + w.maki[i + 1].name + ' ▶' : '次の巻 ▶');
+    var next = el('button', null, i < w.maki.length - 1 ? '第' + w.maki[i + 1].no + U + '　' + w.maki[i + 1].name + ' ▶' : '次へ ▶');
     next.disabled = i >= w.maki.length - 1;
     next.onclick = function () { go('#w=' + w.id + '&m=' + w.maki[i + 1].no + '&t=' + type); };
     pg.appendChild(prev); pg.appendChild(next);
@@ -435,7 +452,9 @@
     if (w && q.m) {
       var m = w.maki.filter(function (x) { return String(x.no) === String(q.m); })[0];
       if (m) {
-        renderMaki(w, m, q.t === 'genbun' ? 'genbun' : 'yaku');
+        var want = q.t === 'genbun' ? 'genbun' : 'yaku';
+        if (!has(m, want)) want = firstType(m);
+        renderMaki(w, m, want);
         show('maki');
         $('bar-title').textContent = w.title + '　' + m.name;
         window.scrollTo(0, 0);
