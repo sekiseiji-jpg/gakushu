@@ -1,0 +1,77 @@
+{
+ "citylight": {
+  "file": "Earth's City Lights by DMSP, 1994-1995 (large).jpg",
+  "lic": "Public domain",
+  "page": "https://commons.wikimedia.org/wiki/File:Earth%27s_City_Lights_by_DMSP%2C_1994-1995_%28large%29.jpg"
+ },
+ "dam": {
+  "file": "Three gorges dam from space.jpg",
+  "lic": "Public domain",
+  "page": "https://commons.wikimedia.org/wiki/File:Three_gorges_dam_from_space.jpg"
+ },
+ "delta": {
+  "file": "Lena River Delta - Landsat 2000.jpg",
+  "lic": "Public domain",
+  "page": "https://commons.wikimedia.org/wiki/File:Lena_River_Delta_-_Landsat_2000.jpg"
+ },
+ "desert": {
+  "file": "ISS-64 Sahara Desert, Murzuq District in central Libya.jpg",
+  "lic": "Public domain",
+  "page": "https://commons.wikimedia.org/wiki/File:ISS-64_Sahara_Desert%2C_Murzuq_District_in_central_Libya.jpg"
+ },
+ "europe-night": {
+  "file": "ISS-45 south east Europe at night.jpg",
+  "lic": "Public domain",
+  "page": "https://commons.wikimedia.org/wiki/File:ISS-45_south_east_Europe_at_night.jpg"
+ },
+ "fjord": {
+  "file": "Terrain of Norway with red snow.jpg",
+  "lic": "Public domain",
+  "page": "https://commons.wikimedia.org/wiki/File:Terrain_of_Norway_with_red_snow.jpg"
+ },
+ "glacier": {
+  "file": "Upsala Glacier, Argentina.jpg",
+  "lic": "Public domain",
+  "page": "https://commons.wikimedia.org/wiki/File:Upsala_Glacier%2C_Argentina.jpg"
+ },
+ "japanmap": {
+  "file": "Satellite image of Japan in April 2018.png",
+  "lic": "Public domain",
+  "page": "https://commons.wikimedia.org/wiki/File:Satellite_image_of_Japan_in_April_2018.png"
+ },
+ "karst": {
+  "file": "Guilin Scenery.jpg",
+  "lic": "Public domain",
+  "page": "https://commons.wikimedia.org/wiki/File:Guilin_Scenery.jpg"
+ },
+ "megacity": {
+  "file": "Landsat View, Tokyo, Japan - Flickr - NASA Goddard Photo and Video.jpg",
+  "lic": "Public domain",
+  "page": "https://commons.wikimedia.org/wiki/File:Landsat_View%2C_Tokyo%2C_Japan_-_Flickr_-_NASA_Goddard_Photo_and_Video.jpg"
+ },
+ "oilfield": {
+  "file": "Persian Gulf at Night.jpg",
+  "lic": "Public domain",
+  "page": "https://commons.wikimedia.org/wiki/File:Persian_Gulf_at_Night.jpg"
+ },
+ "rainforest": {
+  "file": "Fires Arrive in the Amazon Rainforest (1489375).jpg",
+  "lic": "Public domain",
+  "page": "https://commons.wikimedia.org/wiki/File:Fires_Arrive_in_the_Amazon_Rainforest_%281489375%29.jpg"
+ },
+ "senjochi": {
+  "file": "Alluvial fan, Taklimakan Desert, XinJiang Province, China, NASA, ASTER.jpg",
+  "lic": "Public domain",
+  "page": "https://commons.wikimedia.org/wiki/File:Alluvial_fan%2C_Taklimakan_Desert%2C_XinJiang_Province%2C_China%2C_NASA%2C_ASTER.jpg"
+ },
+ "terrace": {
+  "file": "Sado Island’s Riches (153867).jpg",
+  "lic": "Public domain",
+  "page": "https://commons.wikimedia.org/wiki/File:Sado_Island%E2%80%99s_Riches_%28153867%29.jpg"
+ },
+ "volcano": {
+  "file": "Etna eruption seen from the International Space Station.jpg",
+  "lic": "Public domain",
+  "page": "https://commons.wikimedia.org/wiki/File:Etna_eruption_seen_from_the_International_Space_Station.jpg"
+ }
+}
