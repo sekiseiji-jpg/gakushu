@@ -101,8 +101,44 @@ def integral(d, cx, cy, r, t):
     d.arc([cx+int(r*0.10), cy-r-int(r*0.30), cx+int(r*0.72), cy-r+int(r*0.32)], 160, 20, fill=FG, width=t)
     d.arc([cx-int(r*0.72), cy+r-int(r*0.32), cx-int(r*0.10), cy+r+int(r*0.30)], 340, 200, fill=FG, width=t)
 
+def genkou(d, cx, cy, r, t):
+    # 原稿用紙のマス（現代文）。3×3の枡に、中央だけ埋めた印を置く。
+    s=int(r*1.60); x0, y0 = cx-s//2, cy-s//2; st=s//3
+    for i in range(4):
+        d.line([x0, y0+st*i, x0+s, y0+st*i], fill=FG, width=max(1,int(t*0.7)))
+        d.line([x0+st*i, y0, x0+st*i, y0+s], fill=FG, width=max(1,int(t*0.7)))
+    m=int(st*0.26)
+    d.rectangle([x0+st+m, y0+st+m, x0+st*2-m, y0+st*2-m], fill=FG)
+
+def makimono(d, cx, cy, r, t):
+    # 和綴じ本（古文）。縦長の本に、右端の綴じ目と、縦書きの行。
+    w=int(r*1.26); h=int(r*1.62)
+    x0, y0 = cx-w//2, cy-h//2
+    d.rectangle([x0, y0, x0+w, y0+h], outline=FG, width=t)
+    bx=x0+int(w*0.78)                                  # 綴じ目の線
+    d.line([bx, y0, bx, y0+h], fill=FG, width=max(1,int(t*0.7)))
+    for i in (1, 2, 3):                                # 綴じ糸
+        yy=y0+h*i//4
+        d.line([bx, yy, x0+w, yy], fill=FG, width=max(1,int(t*0.7)))
+    for i in (1, 2, 3):                                # 縦書きの行
+        xx=x0+int(w*0.78)*i//4
+        d.line([xx, y0+int(h*0.16), xx, y0+int(h*0.84)], fill=FG, width=max(1,int(t*0.55)))
+
+def fude(d, cx, cy, r, t):
+    # 縦書きの漢文と返り点（漢文）。右に3行、左下にレ点。
+    x0=cx+int(r*1.02); y0, y1 = cy-int(r*0.92), cy+int(r*0.92)
+    for i in range(3):
+        xx=x0-int(r*0.46)*i
+        d.line([xx, y0, xx, y1], fill=FG, width=max(2,int(t*0.95)))
+    # レ点（ほぼ垂直に下ろし、右上へ短く跳ねる）
+    lx, ly = cx-int(r*1.00), cy-int(r*0.74)
+    d.line([lx, ly, lx+int(r*0.20), ly+int(r*0.96)], fill=FG, width=t)
+    d.line([lx+int(r*0.20), ly+int(r*0.96), lx+int(r*0.50), ly+int(r*0.54)],
+           fill=FG, width=t)
+
 SHAPES={'物理':atom, '化学':flask, '生物':dna, '地学':earth, '倫理':enso,
-        '数学ⅠA':graph, '数学ⅡB':sigma, '数学ⅢC':integral}
+        '数学ⅠA':graph, '数学ⅡB':sigma, '数学ⅢC':integral,
+        '現代文':genkou, '古文':makimono, '漢文':fude}
 
 def hex2rgb(h):
     h=h.lstrip('#'); return tuple(int(h[i:i+2],16) for i in (0,2,4))
