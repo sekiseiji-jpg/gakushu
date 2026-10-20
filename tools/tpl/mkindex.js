@@ -8,7 +8,7 @@
 const fs = require('fs'), path = require('path'), os = require('os');
 
 const BASE = path.dirname(path.dirname(__dirname));
-const SUBJECTS = ['社会', '理科', '数学'];
+const SUBJECTS = ['社会', '理科', '数学', '国語'];
 
 function load(file, names) {
   if (!fs.existsSync(file)) return null;
