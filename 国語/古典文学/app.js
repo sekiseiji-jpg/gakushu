@@ -344,10 +344,12 @@
   var curMaki = null, curType = 'yaku';
   // その巻にその種類の本文があるか（chars は [訳の字数, 原文の字数]）
   function has(m, type) {
+    if (type === 'taisho') return m.chars[0] > 0 && m.chars[1] > 0 && m.aligned;
     return (type === 'yaku' ? m.chars[0] : m.chars[1]) > 0;
   }
   function firstType(m) { return has(m, 'yaku') ? 'yaku' : 'genbun'; }
   function noteOf(w, type) {
+    if (type === 'taisho') return '原文と現代語訳を一段ずつ並べています。';
     var label = type === 'genbun' ? '原文' : '現代語訳';
     for (var i = 0; i < w.sources.length; i++) {
       if (w.sources[i].label === label) {
@@ -371,17 +373,17 @@
     m.summary.forEach(function (p) { s.appendChild(el('p', null, p)); });
 
     // その巻にある本文だけボタンを出す（作品によって訳だけ・原文だけのものがある）
-    var both = has(m, 'yaku') && has(m, 'genbun');
+    var many = (has(m, 'yaku') ? 1 : 0) + (has(m, 'genbun') ? 1 : 0) > 1;
     document.querySelectorAll('[data-text]').forEach(function (b) {
       var avail = has(m, b.dataset.text);
-      b.classList.toggle('hidden', !avail || !both);
+      b.classList.toggle('hidden', !avail || !many);
       b.classList.toggle('on', b.dataset.text === type);
       b.onclick = function () { go('#w=' + w.id + '&m=' + m.no + '&t=' + b.dataset.text); };
     });
     $('sw-note').textContent = noteOf(w, type);
 
     var body = $('maki-body');
-    body.className = 'body' + (type === 'genbun' ? ' genbun' : '');
+    body.className = 'body' + (type === 'genbun' ? ' genbun' : (type === 'taisho' ? ' taisho' : ''));
     body.textContent = '';
     body.appendChild(el('div', 'loading', '本文を読み込んでいます…'));
 
@@ -412,7 +414,14 @@
   function paint(body, d, type) {
     body.textContent = '';
     var frag = document.createDocumentFragment();
-    if (type === 'genbun') {
+    if (type === 'taisho') {
+      d.g.forEach(function (line, i) {
+        var box = el('div', 'pair');
+        box.appendChild(el('p', 'gen' + (line.charAt(0) === 'w' ? ' waka' : ''), line.slice(1)));
+        if (d.y[i]) box.appendChild(el('p', 'yak', d.y[i]));
+        frag.appendChild(box);
+      });
+    } else if (type === 'genbun') {
       d.g.forEach(function (line) {
         var waka = line.charAt(0) === 'w';
         frag.appendChild(el('p', waka ? 'waka' : null, line.slice(1)));
@@ -452,7 +461,7 @@
     if (w && q.m) {
       var m = w.maki.filter(function (x) { return String(x.no) === String(q.m); })[0];
       if (m) {
-        var want = q.t === 'genbun' ? 'genbun' : 'yaku';
+        var want = (q.t === 'genbun' || q.t === 'taisho') ? q.t : 'yaku';
         if (!has(m, want)) want = firstType(m);
         renderMaki(w, m, want);
         show('maki');

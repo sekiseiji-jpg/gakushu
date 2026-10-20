@@ -203,3 +203,16 @@ body{
   .body{padding:18px 16px 22px}
   .hero{padding:16px}
 }
+
+/* 対照表示：原文の一段と、その訳を続けて見せる */
+.body.taisho p{text-indent:0; margin:0}
+.body.taisho .pair{
+  margin:0 0 1.9em; padding:0 0 1.4em; border-bottom:1px solid var(--border);
+}
+.body.taisho .pair:last-child{border-bottom:0; padding-bottom:0; margin-bottom:0}
+.body.taisho .gen{letter-spacing:.02em; margin-bottom:.7em}
+.body.taisho .gen.waka{padding-left:2em; color:var(--c); line-height:2.1}
+.body.taisho .yak{
+  color:var(--muted); font-size:.95em; padding-left:1em;
+  border-left:3px solid var(--soft);
+}
