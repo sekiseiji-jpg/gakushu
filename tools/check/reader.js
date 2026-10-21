@@ -9,17 +9,24 @@
 // 使い方: node tools/check/reader.js [国語/近現代文学 ...]   （無指定なら読み物すべて）
 const fs = require('fs');
 const path = require('path');
-const os = require('os');
 
 const ROOT = path.dirname(path.dirname(__dirname));
 const READERS = ['国語/古典文学', '国語/近現代文学'];
 
-// data-works.js を読み込む（末尾に module.exports があるのでそのまま require できる）
+// data-works.js / data-authors.js を読み込む。
+// 末尾に module.exports があるので、偽の module を渡して評価すれば取り出せる（lib.js と同じ方式）。
+// 一時ファイルに書き出して require する方式はやめた。ファイル名をパスの末尾から作っていたため
+// 古典文学と近現代文学が同じ名前になり（どちらも「文学/data-works.js」で終わる）、
+// さらに os.tmpdir() がシンボリックリンクで require.cache の削除も効かず、
+// 近現代文学を読んだつもりで古典文学のデータが返っていた（知見 16.1）。
 function load(file) {
-  const p = path.join(os.tmpdir(), '_rd_' + Buffer.from(file).toString('hex').slice(-40) + '.js');
-  fs.writeFileSync(p, fs.readFileSync(file, 'utf8'));
-  delete require.cache[p];
-  return require(p);
+  const mod = { exports: {} };
+  try {
+    new Function('module', 'exports', fs.readFileSync(file, 'utf8'))(mod, mod.exports);
+  } catch (e) {
+    throw new Error(file + ' を読めない: ' + e.message);
+  }
+  return mod.exports;
 }
 
 // ルビ記法と改行を外した、見かけの字数。

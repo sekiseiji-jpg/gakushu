@@ -1,4 +1,5 @@
-// クイズの全19分野に chk・figs・bias・xref・xord・xsel を、読み物2分野に reader をかけ、最後に要約を出す。
+// クイズの全19分野に chk・figs・bias・xref・xord・xsel を、読み物2分野に reader を、
+// 版の番号（?v= と CACHE）には ver をかけ、最後に要約を出す。
 // 使い方: node tools/check/all.js [-v]      -v をつけると chk の内訳もすべて表示する
 const path = require('path');
 const { execFileSync } = require('child_process');
@@ -44,6 +45,11 @@ console.log('\n=== reader（読み物アプリのデータ） ===');
 const rr = run('reader.js', []);
 process.stdout.write(rr.out);
 
+// ---- 版の番号（?v= と CACHE）----
+console.log('\n=== ver（?v= と CACHE の番号） ===');
+const rv = run('ver.js', []);
+process.stdout.write(rv.out);
+
 // ---- 偏り ----
 console.log('\n=== bias（cmb・ord の正解位置） ===');
 const rb = run('bias.js', []);
@@ -72,8 +78,9 @@ console.log('\n=== まとめ ===');
 console.log(APPS.length + '分野 ' + (ngChk.length ? okChk + '分野OK・' + ngChk.length + '分野NG（' + ngChk.join(' ') + '）' : '検証OK') +
   ' ／ 矛盾' + (nx + no + ns) + (rr.code ? ' ／ 読み物NG' : ' ／ 読み物OK') +
   (rf.code ? ' ／ 図版NG' : ' ／ 図版OK') +
+  (rv.code ? ' ／ 版NG' : ' ／ 版OK') +
   (rb.code ? ' ／ 偏り警告あり' : ''));
 
-const bad = ngChk.length || nx || no || ns || rb.code || rr.code || rf.code;
+const bad = ngChk.length || nx || no || ns || rb.code || rr.code || rf.code || rv.code;
 if (bad) { console.log('✗ 直すところがあります'); process.exit(1); }
 console.log('✓ すべて問題なし');
