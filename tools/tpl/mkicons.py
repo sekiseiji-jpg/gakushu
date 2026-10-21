@@ -219,11 +219,28 @@ def pennib(d, cx, cy, r, t):
     d.ellipse([cx-hr, hy-hr, cx+hr, hy+hr], outline=FG, width=max(1, int(t*0.8)))
     d.line([cx, hy+hr, cx, top+h], fill=FG, width=max(1, int(t*0.7)))   # 割れ目
 
+def medal(d, cx, cy, r, t):
+    # 検定のメダル（英検2級）。二本のリボンの上に円を置き、中に合格の印を入れる。
+    rw = max(2, int(r*0.30))                           # リボンの幅
+    top = cy - int(r*0.30)
+    for sx in (-1, 1):                                 # 左右のリボン
+        x = cx + sx*int(r*0.52)
+        d.line([x, top, x, cy+int(r*1.12)], fill=FG, width=rw)
+    bgc = d._image.getpixel((0, 0))                    # リボンの切れこみは地の色で抜く
+    by = cy+int(r*1.12)
+    d.polygon([(cx-int(r*0.80), by), (cx+int(r*0.80), by),
+               (cx, by-int(r*0.34))], fill=bgc)
+    d.ellipse([cx-r, cy-r, cx+r, cy+r], fill=bgc)      # 円の下を抜いてから描く
+    d.ellipse([cx-r, cy-r, cx+r, cy+r], outline=FG, width=t)
+    ck = max(1, int(t*0.9))                            # 中のチェック
+    d.line([(cx-int(r*0.40), cy+int(r*0.02)), (cx-int(r*0.08), cy+int(r*0.36)),
+            (cx+int(r*0.44), cy-int(r*0.36))], fill=FG, width=ck, joint='curve')
+
 SHAPES={'物理':atom, '化学':flask, '生物':dna, '地学':earth, '倫理':enso,
         '数学ⅠA':graph, '数学ⅡB':sigma, '数学ⅢC':integral,
         '現代文':genkou, '古文':makimono, '漢文':fude,
         '英文法':bunkei, '英文読解':dokkai, '語彙と表現':jisho,
-        '漢検2級':henbou}
+        '漢検2級':henbou, '英検2級':medal}
 
 # apps.json に載せない、専用のつくりのアプリ（出力先は <教科>/<分野>）
 READERS=[('国語', '古典文学', shiori, '#7a3b6a'),

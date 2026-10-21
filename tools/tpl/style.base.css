@@ -381,3 +381,14 @@ dialog::backdrop { background: rgba(20,12,8,.5); }
 /* 地図は、図解より少し広く使う */
 .fig-svg.fig-map { padding: 8px; background: var(--surface); }
 .fig-svg.fig-map svg { max-height: 420px; margin: 0 auto; }
+
+/* 単語帳：意味をかくす（赤シートと同じ使い方）。おすとその行だけ出る */
+.mask-btn { margin: 0 0 8px; }
+.tl-d.masked {
+  background: var(--muted);
+  color: transparent;
+  border-radius: 4px;
+  cursor: pointer;
+  user-select: none;
+}
+.tl-d.masked.open { background: none; color: var(--muted); }

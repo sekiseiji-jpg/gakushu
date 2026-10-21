@@ -12,7 +12,7 @@ const defaults = {
   savedQuiz: [],   // qid
   sessions: [],    // {d: 日付, n: 問題数, c: 正解数}
   days: {},        // 日付 -> その日に解いた問題数
-  set: { furigana: false, shuffle: true, fontsize: 16, theme: 'auto' }
+  set: { furigana: false, shuffle: true, fontsize: 16, theme: 'auto', mask: false }
 };
 let S = load();
 
@@ -246,6 +246,29 @@ function renderTlChips() {
   $('#tl-chips').innerHTML = chips.map((c) => `<button class="chip ${tlEra === c.id ? 'active' : ''}" data-e="${c.id}">${esc(c.name)}</button>`).join('');
   $$('#tl-chips .chip').forEach((b) => b.addEventListener('click', () => { tlEra = b.dataset.e; renderTlChips(); renderTimeline(); }));
 }
+/* 単語帳（意味をかくして覚える）
+   APP.cardMode を立てた分野だけ、一覧タブに「意味をかくす」が出る。
+   かくした説明は、その行をおすと一つずつ出る（赤シートと同じ使い方）。
+   立てていない分野では、ボタンも作られないので何も変わらない。 */
+const CARD_MODE = (typeof APP !== 'undefined' && !!APP.cardMode);
+function setupCardMode() {
+  if (!CARD_MODE) return;
+  const count = $('#tl-count');
+  const b = document.createElement('button');
+  b.id = 'tl-mask';
+  b.className = 'chip mask-btn';
+  count.parentNode.insertBefore(b, count);
+  const draw = () => {
+    b.textContent = S.set.mask ? '意味を出す' : '意味をかくす';
+    b.classList.toggle('active', !!S.set.mask);
+  };
+  b.addEventListener('click', () => {
+    S.set.mask = !S.set.mask;
+    save(); draw(); renderTimeline();
+  });
+  draw();
+}
+
 function renderTimeline() {
   const q = $('#tl-search').value.trim();
   let list = ALL_EVENTS;
@@ -253,12 +276,16 @@ function renderTimeline() {
   if (q) list = list.filter((v) => (v.y + v.t + v.d + v.eraName).includes(q));
   $('#tl-count').textContent = `${list.length}件`;
   const hi = (s) => (q ? esc(s).split(esc(q)).join(`<mark>${esc(q)}</mark>`) : esc(s));
+  const mask = CARD_MODE && S.set.mask ? ' masked' : '';
   $('#tl-list').innerHTML = list.length ? list.map((v) => `
     <li class="tl-item" style="--ec:${v.color}">
       <div><span class="tl-y">${hi(v.y)}</span><span class="tl-era" data-era="${v.era}">${esc(v.eraName)}</span></div>
-      <div class="tl-t">${hi(v.t)}</div><div class="tl-d">${hi(v.d)}</div></li>`).join('')
+      <div class="tl-t">${hi(v.t)}</div><div class="tl-d${mask}">${hi(v.d)}</div></li>`).join('')
     : '<div class="empty">該当する年表項目がありません</div>';
   $$('#tl-list .tl-era').forEach((b) => b.addEventListener('click', () => gotoEra(b.dataset.era)));
+  if (mask) {
+    $$('#tl-list .tl-d').forEach((d) => d.addEventListener('click', () => d.classList.toggle('open')));
+  }
 }
 $('#tl-search').addEventListener('input', renderTimeline);
 
@@ -603,6 +630,7 @@ $('#set-theme').addEventListener('change', (e) => { S.set.theme = e.target.value
 applySettings();
 renderEraGrid();
 renderTlChips();
+setupCardMode();
 renderTimeline();
 renderThemes();
 renderTopicChips();

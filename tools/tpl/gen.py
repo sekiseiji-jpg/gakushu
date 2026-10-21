@@ -95,7 +95,9 @@ def build_index(c):
         ('title="次の時代"', 'title="次の%s"' % c['unit']),
         ('placeholder="用語・人物・できごとを検索"',
          'placeholder="%s を検索"' % '・'.join([c['kinds']['word'], c['kinds']['person'], c['kinds']['event']]) if c.get('kinds') else 'placeholder="用語・人物・できごとを検索"'),
-        ('<script src="data-eras.js?v=2"></script>', '<script src="data-units.js?v=1"></script>'),
+        ('<script src="data-eras.js?v=2"></script>',
+         '<script src="data-units.js?v=1"></script>\n'
+         '  <script src="data-figs.js?v=1"></script>'),
         ('<script src="data-quiz.js?v=2"></script>', '<script src="data-quiz.js?v=1"></script>'),
         ('<script src="data-themes.js?v=2"></script>', '<script src="data-themes.js?v=1"></script>'),
         ('<script src="app.js?v=2"></script>', '<script src="app.js?v=1"></script>'),
@@ -156,6 +158,7 @@ const FILES = [
   'style.css',
   'app.js',
   'data-units.js',
+  'data-figs.js',
   'data-quiz.js',
   'data-themes.js',
   'manifest.webmanifest',
