@@ -1,5 +1,7 @@
 # 📚 学習アプリ
 
+最終更新: 2026-10-21
+
 高校の学習アプリをまとめたポータルです。HTML / CSS / JavaScript だけで動き、インストール不要・完全オフライン対応。
 
 **公開URL: https://sekiseiji-jpg.github.io/gakushu/**
