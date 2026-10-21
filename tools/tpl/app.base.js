@@ -64,6 +64,47 @@ $$('.tab').forEach((t) => t.addEventListener('click', () => {
   window.scrollTo({ top: 0 });
 }));
 
+/* 読み上げ。端末に入っている音声で語を読む。ネットは使わないのでオフラインでも鳴る。
+   APP.speak に言語（'en-US' など）を入れた分野にだけ、一覧に 🔊 が出る。
+   立てていない分野ではボタンを作らないので、何も変わらない（cardMode と同じ考え方）。 */
+const SPEAK = (typeof APP !== 'undefined' && APP.speak) || '';
+const SYN = window.speechSynthesis || null;
+let sayVoice;              // undefined=まだ選んでいない / null=その言語の声が無い
+function sayPick() {
+  if (sayVoice !== undefined) return sayVoice;
+  const vs = (SYN && SYN.getVoices && SYN.getVoices()) || [];
+  if (!vs.length) return null;        // 声の一覧はあとから届く端末がある。次に押したとき決まる
+  const head = SPEAK.split('-')[0];
+  sayVoice = vs.find((v) => v.lang.replace('_', '-') === SPEAK)
+    || vs.find((v) => v.lang.replace('_', '-').split('-')[0] === head) || null;
+  return sayVoice;
+}
+function say(text, btn) {
+  if (!SPEAK || !SYN || typeof SpeechSynthesisUtterance === 'undefined') return;
+  SYN.cancel();                       // 続けて押したら、前の語は打ち切る
+  const u = new SpeechSynthesisUtterance(text);
+  u.lang = SPEAK;
+  const v = sayPick();
+  if (v) u.voice = v;
+  if (btn) {
+    $$('.say.on').forEach((b) => b.classList.remove('on'));
+    btn.classList.add('on');
+    u.onend = () => btn.classList.remove('on');
+    u.onerror = () => btn.classList.remove('on');
+  }
+  SYN.speak(u);
+}
+const ipaHTML = (v) => (v.p ? `<span class="tl-ipa">${esc(v.p)}</span>` : '');
+const sayHTML = (w) => (SPEAK
+  ? `<button class="say" type="button" data-say="${esc(w)}" aria-label="${esc(w)} を読み上げる">🔊</button>` : '');
+function bindSay(root) {
+  if (!SPEAK) return;
+  $$('.say', root).forEach((b) => b.addEventListener('click', (e) => {
+    e.stopPropagation();              // 単語帳で、押した行の意味が開いてしまわないように
+    say(b.dataset.say, b);
+  }));
+}
+
 /* ========== 時代一覧 ========== */
 function renderEraGrid() {
   $('#era-grid').innerHTML = ERAS.map((e) => `
