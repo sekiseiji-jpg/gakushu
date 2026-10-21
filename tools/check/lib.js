@@ -132,4 +132,12 @@ function expRefErrors(x) {
   return out;
 }
 
-module.exports = { ROOT, APPS, MINLEN, subjectOf, minlenFor, dirsFromArgs, label, pad, load, expRefErrors };
+// フォルダの中の写真を並べる。macOS でコピーすると `._名前.jpg` という影のファイルができる
+// （リソースフォークの入れ物で、中身は画像ではない）。`ls` はドットで始まる名前を隠すが
+// readdirSync は返すので、ここで落とさないと「使われていない写真」として挙がってしまう。
+// .gitignore で `._*` を無視しているのと同じことを、ファイルを数える側でもやる。
+function jpgsIn(dir) {
+  return fs.readdirSync(dir).filter((f) => !f.startsWith('._') && f.endsWith('.jpg'));
+}
+
+module.exports = { ROOT, APPS, MINLEN, subjectOf, minlenFor, dirsFromArgs, label, pad, load, expRefErrors, jpgsIn };

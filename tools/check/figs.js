@@ -9,6 +9,7 @@
 const fs = require('fs');
 const path = require('path');
 const os = require('os');
+const { jpgsIn } = require('./lib.js');
 
 const ROOT = path.dirname(path.dirname(__dirname));
 const FIELDS = ['社会/日本史', '社会/世界史', '社会/地理', '社会/政治・経済', '社会/倫理',
@@ -112,8 +113,8 @@ function check(rel) {
     for (const id of Object.keys(FIGS)) {
       for (const f of FIGS[id]) if (f.k === 'photo' && f.src) used.add(f.src.slice(4, -4));
     }
-    for (const f of fs.readdirSync(idir)) {
-      if (f.endsWith('.jpg') && !used.has(f.slice(0, -4))) say(`使われていない写真: img/${f}`);
+    for (const f of jpgsIn(idir)) {
+      if (!used.has(f.slice(0, -4))) say(`使われていない写真: img/${f}`);
     }
   }
   const none = units.filter((u) => !withFig.has(u.id)).map((u) => u.name);

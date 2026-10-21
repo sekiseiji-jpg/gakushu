@@ -10,7 +10,7 @@
 // 使い方: node tools/check/reader.js [国語/近現代文学 ...]   （無指定なら読み物すべて）
 const fs = require('fs');
 const path = require('path');
-const { minlenFor } = require('./lib.js');
+const { minlenFor, jpgsIn } = require('./lib.js');
 
 const ROOT = path.dirname(path.dirname(__dirname));
 const READERS = ['国語/古典文学', '国語/近現代文学', '英語/英米文学', '理科/ノーベル賞'];
@@ -229,7 +229,7 @@ function check(rel) {
     // 余分な画像が残っていないか（肖像を置かない分野にはフォルダ自体がない）
     const adir = path.join(dir, 'authors');
     if (fs.existsSync(adir)) {
-      for (const f of fs.readdirSync(adir).filter((x) => x.endsWith('.jpg'))) {
+      for (const f of jpgsIn(adir)) {
         if (!aid.has(f.slice(0, -4))) say(`使われていない肖像: ${f}`);
       }
     }
