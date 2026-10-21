@@ -25,7 +25,7 @@
   WORKS.forEach(function (w) { workById[w.id] = w; });
 
   /* ---------- 保存（設定と読んだ記録） ---------- */
-  var st = { size: 'm', theme: 'auto', lh: 'n', read: {}, last: null };
+  var st = { size: 'm', theme: 'auto', lh: 'n', rate: '1', read: {}, last: null };
   try {
     var raw = localStorage.getItem(KEY);
     if (raw) {
@@ -385,6 +385,7 @@
     return '';
   }
   function renderMaki(w, m, type) {
+    spStop();
     curWork = w; curMaki = m; curType = type;
     var h = $('maki-head');
     h.textContent = '';
@@ -478,6 +479,147 @@
       d.y.forEach(function (p) { frag.appendChild(el('p', null, p)); });
     }
     body.appendChild(frag);
+  }
+
+  /* ---------- 読み上げ ----------
+     端末に入っている音声で本文を読む。ネットは使わないので、
+     保存した本文と同じくオフラインでも動く。
+     長い段落はそのまま渡すと途中で切れる端末があるので、文ごとに切って順に渡す。
+     音声合成を持たない端末では、操作そのものを出さない。 */
+  var SP = window.speechSynthesis || null;
+  var spQ = [], spAt = -1;
+  // 訳と原文で言語が違う分野がある（英米文学の原文は英語）。APP に出しておく。
+  var Y_LANG = APP.speakLang || 'ja-JP';
+  var G_LANG = APP.genbunLang || Y_LANG;
+  var SP_MAX = 140;                      // 一度に渡す文字数の目安
+  var SP_CLOSE = '」』）)”’"\'';          // 句点のあとに続く閉じ記号。ここでは切らない
+
+  /* ルビの読み（<rt>）は親文字と二重に読まれてしまうので、たどらない。 */
+  function spText(node) {
+    var out = '';
+    (function walk(n) {
+      for (var i = 0; i < n.childNodes.length; i++) {
+        var c = n.childNodes[i];
+        if (c.nodeType === 3) out += c.nodeValue;
+        else if (c.nodeType === 1 && c.tagName !== 'RT' && c.tagName !== 'RP') walk(c);
+      }
+    }(node));
+    return out.replace(/\s+/g, ' ').trim();
+  }
+
+  function spChunks(s) {
+    var out = [], buf = '';
+    for (var i = 0; i < s.length; i++) {
+      var c = s.charAt(i), nx = s.charAt(i + 1), stop = false;
+      buf += c;
+      if ('。！？'.indexOf(c) >= 0) stop = !nx || SP_CLOSE.indexOf(nx) < 0;
+      else if ('.!?'.indexOf(c) >= 0) stop = !nx || nx === ' ';   // 略語や小数で切らない
+      if (!stop && buf.length >= SP_MAX && c === ' ') stop = true;
+      if (!stop && buf.length >= SP_MAX * 2) stop = true;         // 句点のない長文の保険
+      if (stop) { out.push(buf); buf = ''; }
+    }
+    if (buf) out.push(buf);
+    return out;
+  }
+
+  function spLangOf(p) {
+    if (p.className.indexOf('gen') >= 0) return G_LANG;   // 対照表示の原文の段
+    if (p.className.indexOf('yak') >= 0) return Y_LANG;   // 対照表示の訳の段
+    return curType === 'genbun' ? G_LANG : Y_LANG;
+  }
+
+  function spVoice(lang) {
+    var vs = (SP.getVoices && SP.getVoices()) || [];
+    var head = lang.split('-')[0], i;
+    for (i = 0; i < vs.length; i++) if (vs[i].lang.replace('_', '-') === lang) return vs[i];
+    for (i = 0; i < vs.length; i++) if (vs[i].lang.replace('_', '-').split('-')[0] === head) return vs[i];
+    return null;
+  }
+
+  function spBuild() {
+    spQ = [];
+    var ps = $('maki-body').querySelectorAll('p, h3');
+    for (var i = 0; i < ps.length; i++) {
+      var t = spText(ps[i]);
+      if (!t) continue;
+      var cs = spChunks(t), lang = spLangOf(ps[i]);
+      for (var j = 0; j < cs.length; j++) spQ.push({ el: ps[i], text: cs[j], lang: lang });
+    }
+  }
+
+  function spMark(i) {
+    var ps = $('maki-body').querySelectorAll('.sp-now');
+    for (var k = 0; k < ps.length; k++) ps[k].classList.remove('sp-now');
+    if (i >= 0 && spQ[i]) {
+      spQ[i].el.classList.add('sp-now');
+      spQ[i].el.scrollIntoView({ block: 'center', behavior: 'smooth' });
+    }
+  }
+
+  /* その言語の音声が端末に入っていないと、別の言語の声で読まれて聞きとれない。
+     黙って変な音を出すより、入っていないことを伝える。 */
+  var spMiss = '';
+  function spWarn() {
+    var miss = [];
+    for (var i = 0; i < spQ.length; i++) {
+      if (!spVoice(spQ[i].lang) && miss.indexOf(spQ[i].lang) < 0) miss.push(spQ[i].lang);
+    }
+    spMiss = miss.length ? miss.join('・') + ' の音声がこの端末に入っていません' : '';
+  }
+
+  function spDraw() {
+    var b = $('sp-play');
+    if (!b) return;
+    var on = spAt >= 0;
+    b.textContent = on ? '■ とめる' : '▶ 読み上げ';
+    b.classList.toggle('on', on);
+    var prog = on ? (spAt + 1) + '／' + spQ.length : '';
+    $('sp-note').textContent = prog + (spMiss ? (prog ? '　' : '') + spMiss : '');
+  }
+
+  function spStop() {
+    if (!SP) return;
+    spAt = -1;
+    SP.cancel();
+    if ($('maki-body')) spMark(-1);
+    spDraw();
+  }
+
+  function spSay(i) {
+    if (i >= spQ.length) { spStop(); return; }
+    spAt = i;
+    var u = new SpeechSynthesisUtterance(spQ[i].text);
+    u.lang = spQ[i].lang;
+    var v = spVoice(spQ[i].lang);
+    if (v) u.voice = v;
+    u.rate = Number(st.rate) || 1;
+    // 読み終わりでも、読めずに終わっても次へ進める（声の無い言語で止まらないように）
+    u.onend = function () { if (spAt === i) spSay(i + 1); };
+    u.onerror = function () { if (spAt === i) spSay(i + 1); };
+    spMark(i);
+    SP.speak(u);
+    spDraw();
+  }
+
+  function spSetup() {
+    var bar = $('maki-speak');
+    if (!bar) return;
+    if (!SP || typeof SpeechSynthesisUtterance === 'undefined') { bar.hidden = true; return; }
+    $('sp-play').onclick = function () {
+      if (spAt >= 0) { spStop(); return; }
+      spBuild();
+      if (!spQ.length) return;
+      spWarn();
+      spSay(0);
+    };
+    var r = $('sp-rate');
+    r.value = String(st.rate || '1');
+    r.onchange = function () {
+      st.rate = this.value; save();
+      if (spAt >= 0) { var at = spAt; SP.cancel(); spSay(at); }   // 続きから読み直す
+    };
+    // 画面を閉じるとき、音声だけ残らないようにする
+    window.addEventListener('pagehide', function () { SP.cancel(); });
   }
 
   /* 種類つきの段落。先頭1字が種類で、大文字は「前を一行あける」。
@@ -642,6 +784,7 @@
 
   /* ---------- 画面の切り替え ---------- */
   function show(v) {
+    spStop();
     ['works', 'work', 'maki', 'authors', 'author'].forEach(function (k) {
       var e = $('view-' + k);                 // 文豪の画面は無い分野もある
       if (e) e.classList.toggle('hidden', k !== v);
@@ -761,6 +904,7 @@
 
   /* ---------- 起動 ---------- */
   applySettings();
+  spSetup();
   route();
   if ('serviceWorker' in navigator && location.protocol.indexOf('http') === 0) {
     navigator.serviceWorker.register('sw.js').catch(function () {});

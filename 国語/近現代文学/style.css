@@ -318,3 +318,13 @@ body{
   .ahero .bimg{width:108px; height:144px}
   .ahero h2{font-size:1.2em}
 }
+
+/* 読み上げ。端末に入っている音声で本文を読む。いま読んでいるところに下地を敷く。 */
+.speak{display:flex; align-items:center; gap:10px; margin:-6px 0 14px; flex-wrap:wrap}
+.speak[hidden]{display:none}
+.sp-rate{color:var(--muted); font-size:.82rem; display:flex; align-items:center; gap:5px}
+.sp-rate select{
+  border:1px solid var(--border); background:var(--surface); color:var(--text);
+  border-radius:8px; padding:4px 8px; font:inherit; font-size:.82rem;
+}
+.body .sp-now{background:var(--mark); border-radius:6px}

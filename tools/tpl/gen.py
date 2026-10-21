@@ -13,7 +13,10 @@ def outdir(c):
 
 def read(p): return open(p, encoding='utf-8').read()
 def write(p, s):
-    open(p, 'w', encoding='utf-8').write(s)
+    # 改行は LF に固定する。OS まかせにすると、Windows で走らせたときだけ CRLF になり、
+    # 中身は同じなのに全行が差分になる。.bat だけは CRLF が決まりなので、そこは残す。
+    nl = '\r\n' if p.endswith('.bat') else '\n'
+    open(p, 'w', encoding='utf-8', newline=nl).write(s)
     print('  ->', os.path.relpath(p, BASE))
 
 # ---------- app.js（全教科で共通。ラベルは APP から読む） ----------
@@ -102,6 +105,10 @@ def build_index(c):
         ('<script src="data-themes.js?v=2"></script>', '<script src="data-themes.js?v=1"></script>'),
         ('<script src="app.js?v=2"></script>', '<script src="app.js?v=1"></script>'),
         ('<link rel="stylesheet" href="style.css?v=2">', '<link rel="stylesheet" href="style.css?v=1">'),
+        ('    <section id="tab-timeline" class="panel">\n      <div class="card tight">',
+         '    <section id="tab-timeline" class="panel">\n'
+         + ('      <p class="lead">%s</p>\n' % c['leadList'] if c.get('leadList') else '')
+         + '      <div class="card tight">'),
         ('<p class="lead">時代をまたいで一本の流れとして眺めると、因果関係が見えてきます。</p>',
          '<p class="lead">%s</p>' % c['leadThemes']),
         ('<p class="lead">「なぜそうなったのか」を掘り下げた読み物です。論述や考察問題の土台になります。</p>',

@@ -12,7 +12,7 @@
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
-<link rel="stylesheet" href="style.css?v=6">
+<link rel="stylesheet" href="style.css?v=7">
 </head>
 <body>
 
@@ -89,6 +89,18 @@
       <button class="sw" data-text="taisho">対照</button>
       <span class="sw-note" id="sw-note"></span>
     </div>
+    <div class="speak" id="maki-speak">
+      <button class="sw" id="sp-play" type="button">▶ 読み上げ</button>
+      <label class="sp-rate">速さ
+        <select id="sp-rate">
+          <option value="0.7">ゆっくり</option>
+          <option value="1">ふつう</option>
+          <option value="1.3">はやめ</option>
+          <option value="1.6">とてもはやい</option>
+        </select>
+      </label>
+      <span class="sw-note" id="sp-note"></span>
+    </div>
     <article id="maki-body" class="body"></article>
     <nav class="pager" id="maki-pager"></nav>
   </section>
@@ -126,9 +138,9 @@
   </div>
 </div>
 
-<script src="data-works.js?v=6"></script>
-<script src="data-notes.js?v=6"></script>
-<script src="data-authors.js?v=6"></script>
-<script src="app.js?v=6"></script>
+<script src="data-works.js?v=7"></script>
+<script src="data-notes.js?v=7"></script>
+<script src="data-authors.js?v=7"></script>
+<script src="app.js?v=7"></script>
 </body>
 </html>

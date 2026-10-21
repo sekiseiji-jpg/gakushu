@@ -392,3 +392,15 @@ dialog::backdrop { background: rgba(20,12,8,.5); }
   user-select: none;
 }
 .tl-d.masked.open { background: none; color: var(--muted); }
+
+/* 発音記号と読み上げ。音声は端末に入っているものを使う（ネットは使わない） */
+.tl-ipa {
+  margin-left: .5em; color: var(--muted); font-weight: 400; font-size: .86em;
+  font-family: "Segoe UI", "Noto Sans", "Hiragino Sans", sans-serif;
+}
+.say {
+  margin-left: .45em; padding: 0 7px; border: 1px solid var(--border);
+  background: var(--surface); color: var(--muted); border-radius: 999px;
+  font: inherit; font-size: .8em; line-height: 1.7; cursor: pointer; vertical-align: middle;
+}
+.say.on { background: var(--primary); border-color: var(--primary); }

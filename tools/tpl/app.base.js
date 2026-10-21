@@ -145,8 +145,9 @@ function renderEraBody() {
   } else if (curSub === 'chrono') {
     box.innerHTML = `<div class="card"><ol class="timeline" style="--ec:${e.color}">
       ${e.events.map((v) => `<li class="tl-item"><div class="tl-y">${esc(v.y)}</div>
-        <div class="tl-t">${esc(v.t)}</div><div class="tl-d">${esc(v.d)}</div></li>`).join('')}
+        <div class="tl-t">${esc(v.t)}${ipaHTML(v)}${sayHTML(v.t)}</div><div class="tl-d">${esc(v.d)}</div></li>`).join('')}
     </ol></div>`;
+    bindSay(box);
   } else if (curSub === 'topic') {
     box.innerHTML = e.topics.map((t) => topicHTML(t, e)).join('');
     bindFold(box);
@@ -280,9 +281,10 @@ function renderTimeline() {
   $('#tl-list').innerHTML = list.length ? list.map((v) => `
     <li class="tl-item" style="--ec:${v.color}">
       <div><span class="tl-y">${hi(v.y)}</span><span class="tl-era" data-era="${v.era}">${esc(v.eraName)}</span></div>
-      <div class="tl-t">${hi(v.t)}</div><div class="tl-d${mask}">${hi(v.d)}</div></li>`).join('')
+      <div class="tl-t">${hi(v.t)}${ipaHTML(v)}${sayHTML(v.t)}</div><div class="tl-d${mask}">${hi(v.d)}</div></li>`).join('')
     : '<div class="empty">該当する年表項目がありません</div>';
   $$('#tl-list .tl-era').forEach((b) => b.addEventListener('click', () => gotoEra(b.dataset.era)));
+  bindSay($('#tl-list'));
   if (mask) {
     $$('#tl-list .tl-d').forEach((d) => d.addEventListener('click', () => d.classList.toggle('open')));
   }

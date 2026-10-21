@@ -11,10 +11,11 @@ const APP = {
   icon: '📗',
   unit: '章',
   textVer: '1',                        // text/ の ?v=（本文を直したときだけ上げる）
-  cache: 'eibeibungaku-v6',
+  cache: 'eibeibungaku-v7',
   textCache: 'eibeibungaku-text',      // sw.js の TEXTS と必ず同じにする
   taishoNote: '原文と日本語訳を一段ずつ並べています。',
   firstType: 'genbun',               // 章を開いたら、まず英語の原文を出す
+  genbunLang: 'en-US',               // 原文は英語の音声で読み上げる
   authorWord: '作家',                 // 文豪紹介の呼び名（近現代文学は「文豪」）
   lead: '英米の文学を、英語の原文で読むための本棚です。章ごとにあらすじと、英検2級の語彙をこえる語の語注がついています。保護期間の満了した日本語訳のある作品では、訳も切り替えて読めます。',
 };
