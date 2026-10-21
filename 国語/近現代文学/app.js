@@ -465,7 +465,13 @@
       d.g.forEach(function (line, i) {
         var box = el('div', 'pair');
         box.appendChild(el('p', 'gen' + (line.charAt(0) === 'w' ? ' waka' : ''), line.slice(1)));
-        if (d.y[i]) box.appendChild(el('p', 'yak', d.y[i]));
+        if (d.y[i]) {
+          // 種類つきの段落（rich）は先頭1字が印なので落とし、ルビも組んで出す
+          var yp = el('p', 'yak');
+          if (curWork && curWork.rich) ruby(yp, d.y[i].slice(1));
+          else yp.textContent = d.y[i];
+          box.appendChild(yp);
+        }
         frag.appendChild(box);
       });
     } else if (type === 'genbun') {

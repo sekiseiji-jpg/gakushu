@@ -1,15 +1,15 @@
 // オフライン対応：骨組みは先に保存し、本文は読んだ巻だけをあとから保存する。
 // 全巻をまとめて保存する操作は設定シートにあり、ページ側から同じキャッシュに入れる（app.js）。
 // ファイルを更新したときは CACHE の番号を上げる（index.html の ?v= と同じ番号にする）。
-const CACHE = 'nobel-v3';          // 骨組み（版を上げると入れ替わる）
+const CACHE = 'nobel-v4';          // 骨組み（版を上げると入れ替わる）
 const TEXTS = 'nobel-text';     // 本文（版を上げても残す）
 const SHELL = [
   './',
   'index.html',
-  'style.css?v=3',
-  'data-works.js?v=3',
-  'data-authors.js?v=3',
-  'app.js?v=3',
+  'style.css?v=4',
+  'data-works.js?v=4',
+  'data-authors.js?v=4',
+  'app.js?v=4',
   'manifest.webmanifest',
   'icon-192.png',
   'icon-512.png',
