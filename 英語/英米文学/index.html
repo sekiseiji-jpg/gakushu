@@ -12,7 +12,7 @@
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
-<link rel="stylesheet" href="style.css?v=3">
+<link rel="stylesheet" href="style.css?v=5">
 </head>
 <body>
 
@@ -25,6 +25,11 @@
 <main class="wrap">
 
   <!-- 作品一覧 -->
+  <div class="topsw" id="top-switch">
+    <button class="tsw on" data-top="works">作品で読む</button>
+    <button class="tsw" data-top="authors">作家から見る</button>
+  </div>
+
   <section id="view-works" class="view">
     <p class="lead" id="works-lead"></p>
     <div id="work-list" class="grid"></div>
@@ -32,6 +37,7 @@
       <b>このアプリについて</b>
       <ul>
         <li>章を開くと、まず英語の原文が出ます。日本語訳のある作品では、上の切り替えで訳も読めます。</li>
+        <li>「作家から見る」に切り替えると、10人の顔写真・略歴・作風・ほかの代表作を見られます。</li>
         <li>本文の前にあらすじが出ます。筋をつかんでから原文に入れます。</li>
         <li>英検2級の語彙をこえる語には語注が付きます。原文を読む前に目を通しておくと迷いません。</li>
         <li>本文は開いた章だけを読み込みます。読んだ章は端末に残るので、次からは通信がなくても開けます。</li>
@@ -41,6 +47,25 @@
   </section>
 
   <!-- 作品の扉 -->
+  <!-- 作家一覧 -->
+  <section id="view-authors" class="view hidden">
+    <p class="lead" id="authors-lead"></p>
+    <div id="author-list" class="pgrid"></div>
+    <div class="note">
+      <b>写真について</b>
+      <ul>
+        <li>肖像写真はウィキメディア・コモンズから、著作権の保護期間が満了したものだけを収めています。</li>
+        <li>それぞれの出どころは、作家のページの下に書いてあります。</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- 作家のページ -->
+  <section id="view-author" class="view hidden">
+    <div class="hero ahero" id="author-hero"></div>
+    <div id="author-body"></div>
+  </section>
+
   <section id="view-work" class="view hidden">
     <div class="hero" id="work-hero"></div>
     <div class="tabs" id="work-tabs">
@@ -101,8 +126,9 @@
   </div>
 </div>
 
-<script src="data-works.js?v=3"></script>
-<script src="data-notes.js?v=3"></script>
-<script src="app.js?v=3"></script>
+<script src="data-works.js?v=5"></script>
+<script src="data-notes.js?v=5"></script>
+<script src="data-authors.js?v=5"></script>
+<script src="app.js?v=5"></script>
 </body>
 </html>

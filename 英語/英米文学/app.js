@@ -676,7 +676,7 @@
     if (HAS_AUTHORS && q.p === 'authors') {
       renderAuthors();
       show('authors');
-      $('bar-title').textContent = '文豪';
+      $('bar-title').textContent = APP.authorWord || '文豪';
       window.scrollTo(0, 0);
       return;
     }

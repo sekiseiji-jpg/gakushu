@@ -265,13 +265,14 @@ checkTable('社会/設計書.md');
     eq(f + ' 読み物', '文豪の数', Number(m[7]), kin.auth);
   }
   // 再現プロンプト: 「英米文学：1作品12章（約21万字）・語注122件」
-  const m2 = /英米文学：(\d+)作品(\d+)章（約(\d+)万字）・語注(\d+)件/.exec(md);
+  const m2 = /英米文学：(\d+)作品(\d+)章（約(\d+)万字）・作家(\d+)人・語注(\d+)件/.exec(md);
   if (!m2) say(f, '英米文学の欄が見つからない');
   else {
     eq(f + ' 英米文学', '作品数', Number(m2[1]), eib.works);
     eq(f + ' 英米文学', '章数', Number(m2[2]), eib.maki);
     eq(f + ' 英米文学', '字数（万）', Number(m2[3]), man(eib.chars));
-    eq(f + ' 英米文学', '語注の数', Number(m2[4]), eib.note);
+    eq(f + ' 英米文学', '作家の数', Number(m2[4]), eib.auth);
+    eq(f + ' 英米文学', '語注の数', Number(m2[5]), eib.note);
   }
 
   // 設計書 13章の表: 行ごとに「…巻・約…万字」「…章・約…万字」
