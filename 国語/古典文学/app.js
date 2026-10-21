@@ -1,4 +1,4 @@
-/* 読み物アプリの本体（古典文学・近現代文学で同じものを使う）
+/* 読み物アプリの本体（古典文学・近現代文学・英米文学で同じものを使う）
    画面は3つ（作品一覧 / 作品の扉 / 本文）。URLのハッシュで行き来する。
      #w=genji            作品の扉
      #w=genji&m=5        第5（巻・帖・章…）
@@ -363,12 +363,18 @@
     if (type === 'taisho') return m.chars[0] > 0 && m.chars[1] > 0 && m.aligned;
     return (type === 'yaku' ? m.chars[0] : m.chars[1]) > 0;
   }
-  function firstType(m) { return has(m, 'yaku') ? 'yaku' : 'genbun'; }
+  // 章を開いたとき最初に出す本文。英米文学のように原文を先に見せたい分野は APP.firstType で変える
+  function firstType(m) {
+    var pref = APP.firstType === 'genbun' ? 'genbun' : 'yaku';
+    var other = pref === 'yaku' ? 'genbun' : 'yaku';
+    return has(m, pref) ? pref : other;
+  }
   function labelOf(w, type) {
     return type === 'genbun' ? '原文' : (w.yakuLabel || '現代語訳');
   }
   function noteOf(w, type) {
-    if (type === 'taisho') return '原文と現代語訳を一段ずつ並べています。';
+    // 「現代語訳」という語は分野で変わる（英米文学は日本語訳）。APP に出しておく。
+    if (type === 'taisho') return APP.taishoNote || '原文と現代語訳を一段ずつ並べています。';
     var label = labelOf(w, type);
     for (var i = 0; i < w.sources.length; i++) {
       if (w.sources[i].label === label) {
@@ -390,6 +396,25 @@
     s.textContent = '';
     s.appendChild(el('b', null, 'この' + unitOf(w) + 'のあらすじ'));
     m.summary.forEach(function (p) { s.appendChild(el('p', null, p)); });
+
+    // 語注。data-notes.js を置いた分野にだけ出る（無い分野は要素もデータも無いので何もしない）。
+    var nb = $('maki-notes');
+    if (nb) {
+      var gl = (typeof NOTES !== 'undefined' && NOTES[w.id + '/' + m.no]) || [];
+      nb.textContent = '';
+      nb.hidden = !gl.length;
+      if (gl.length) {
+        nb.appendChild(el('b', null, '語注'));
+        var ul = el('ul', 'gloss');
+        gl.forEach(function (g) {
+          var li = el('li');
+          li.appendChild(el('span', 'gw', g.w));
+          li.appendChild(el('span', 'gd', g.d));
+          ul.appendChild(li);
+        });
+        nb.appendChild(ul);
+      }
+    }
 
     // その巻にある本文だけボタンを出す（作品によって訳だけ・原文だけのものがある）
     var many = (has(m, 'yaku') ? 1 : 0) + (has(m, 'genbun') ? 1 : 0) > 1;
@@ -659,7 +684,8 @@
     if (w && q.m) {
       var m = w.maki.filter(function (x) { return String(x.no) === String(q.m); })[0];
       if (m) {
-        var want = (q.t === 'genbun' || q.t === 'taisho') ? q.t : 'yaku';
+        // URL で指定がなければ、その分野の既定（APP.firstType）に従う
+        var want = (q.t === 'genbun' || q.t === 'taisho' || q.t === 'yaku') ? q.t : firstType(m);
         if (!has(m, want)) want = firstType(m);
         renderMaki(w, m, want);
         show('maki');

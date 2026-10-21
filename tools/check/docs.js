@@ -243,9 +243,12 @@ checkTable('社会/設計書.md');
   const got = {};
   for (const rel of READERS) got[rel] = readerCheck(rel).n;
   const man = (c) => Math.round(c / 10000);     // 「約262万字」の万
-  const ko = got['国語/古典文学'], kin = got['国語/近現代文学'];
-  console.log(pad('読み物', 14) + '古典文学 ' + ko.works + '作品' + ko.maki + '章' + man(ko.chars) + '万字' +
-    ' ／ 近現代文学 ' + kin.works + '作品' + kin.maki + '章' + man(kin.chars) + '万字 文豪' + kin.auth + '人');
+  const ko = got['国語/古典文学'], kin = got['国語/近現代文学'], eib = got['英語/英米文学'];
+  console.log(pad('読み物', 14) + READERS.map((rel) => {
+    const n = got[rel];
+    return rel.split('/')[1] + ' ' + n.works + '作品' + n.maki + '章' + man(n.chars) + '万字'
+      + (n.auth ? ' 文豪' + n.auth + '人' : '') + (n.note ? ' 語注' + n.note + '件' : '');
+  }).join(' ／ '));
 
   // 再現プロンプト: 「古典文学：4作品85巻（約262万字）／近現代文学：30作品214章（約160万字）・文豪26人」
   const f = '社会/再現プロンプト.md';
@@ -261,16 +264,32 @@ checkTable('社会/設計書.md');
     eq(f + ' 読み物', '近現代文学の字数（万）', Number(m[6]), man(kin.chars));
     eq(f + ' 読み物', '文豪の数', Number(m[7]), kin.auth);
   }
-  // 設計書 13章の表: 「85巻・約262万字」「214章・約160万字」
+  // 再現プロンプト: 「英米文学：1作品12章（約21万字）・語注122件」
+  const m2 = /英米文学：(\d+)作品(\d+)章（約(\d+)万字）・語注(\d+)件/.exec(md);
+  if (!m2) say(f, '英米文学の欄が見つからない');
+  else {
+    eq(f + ' 英米文学', '作品数', Number(m2[1]), eib.works);
+    eq(f + ' 英米文学', '章数', Number(m2[2]), eib.maki);
+    eq(f + ' 英米文学', '字数（万）', Number(m2[3]), man(eib.chars));
+    eq(f + ' 英米文学', '語注の数', Number(m2[4]), eib.note);
+  }
+
+  // 設計書 13章の表: 行ごとに「…巻・約…万字」「…章・約…万字」
   const g = '社会/設計書.md';
   const gmd = fs.readFileSync(path.join(ROOT, g), 'utf8');
   const a = /(\d+)巻・約(\d+)万字/.exec(gmd), b = /(\d+)章・約(\d+)万字/.exec(gmd);
+  const c2 = /\|\s*英米文学\s*\|[^|]*\|\s*(\d+)章・約(\d+)万字\s*\|/.exec(gmd);
   if (!a || !b) say(g, '読み物の量（…巻・約…万字 ／ …章・約…万字）が見つからない');
   else {
     eq(g + ' 読み物', '古典文学の巻数', Number(a[1]), ko.maki);
     eq(g + ' 読み物', '古典文学の字数（万）', Number(a[2]), man(ko.chars));
     eq(g + ' 読み物', '近現代文学の章数', Number(b[1]), kin.maki);
     eq(g + ' 読み物', '近現代文学の字数（万）', Number(b[2]), man(kin.chars));
+  }
+  if (!c2) say(g, '13章の表に英米文学の行がない');
+  else {
+    eq(g + ' 読み物', '英米文学の章数', Number(c2[1]), eib.maki);
+    eq(g + ' 読み物', '英米文学の字数（万）', Number(c2[2]), man(eib.chars));
   }
 }
 

@@ -5,18 +5,24 @@
    インデックスには単元の見出し情報と用語名だけを入れる。
    説明文まで入れるとファイルが重くなるため、本文の検索は各アプリの🔍に任せる。
 */
-const fs = require('fs'), path = require('path'), os = require('os');
+const fs = require('fs'), path = require('path');
 
 const BASE = path.dirname(path.dirname(__dirname));
 const SUBJECTS = ['社会', '理科', '数学', '国語', '英語'];
 
+// 一時ファイルに書いて require する方式はやめた。ファイル名をパスの末尾から作っていたため
+// 「…文学/data-works.js」で終わる読み物が互いに衝突し、2つ目以降が1つ目のデータを返していた。
+// os.tmpdir() がシンボリックリンクでない環境（Windows など）では起きないので、長く見つからなかった。
+// 知見 16.1 と同じ原因・同じ直し方。
 function load(file, names) {
   if (!fs.existsSync(file)) return null;
   let s = fs.readFileSync(file, 'utf8');
   if (!/module\.exports/.test(s)) s += '\n];\nmodule.exports={' + names + '};';
-  const p = path.join(os.tmpdir(), '_ix_' + Buffer.from(file).toString('hex').slice(-40) + '.js');
-  fs.writeFileSync(p, s); delete require.cache[p];
-  try { return require(p); } catch (e) { console.log('  読めません: ' + file + ' (' + e.message + ')'); return null; }
+  const mod = { exports: {} };
+  try {
+    new Function('module', 'exports', s)(mod, mod.exports);
+    return mod.exports;
+  } catch (e) { console.log('  読めません: ' + file + ' (' + e.message + ')'); return null; }
 }
 
 const fields = [];   // 分野（アプリ）の一覧

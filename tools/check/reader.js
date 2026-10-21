@@ -5,13 +5,14 @@
 //   ・本文ファイルがあり、TEXT() の番号と中身の字数が data-works.js と合うか
 //   ・入力者注記の消し残し（［＃…］）や、置きかえられなかった外字（〓）がないか
 //   ・段落の種類（rich のとき）とルビ記法が壊れていないか
+//   ・語注（data-notes.js）の語が、その章の原文に実在するか
 //   ・日本語以外の文字がまぎれこんでいないか
 // 使い方: node tools/check/reader.js [国語/近現代文学 ...]   （無指定なら読み物すべて）
 const fs = require('fs');
 const path = require('path');
 
 const ROOT = path.dirname(path.dirname(__dirname));
-const READERS = ['国語/古典文学', '国語/近現代文学'];
+const READERS = ['国語/古典文学', '国語/近現代文学', '英語/英米文学'];
 
 // data-works.js / data-authors.js を読み込む。
 // 末尾に module.exports があるので、偽の module を渡して評価すれば取り出せる（lib.js と同じ方式）。
@@ -51,6 +52,8 @@ const KIND = /^[pPvVcChw]/;
 
 function check(rel) {
   const dir = path.join(ROOT, rel);
+  // 英語の読み物は原文が英語なので、ラテン文字を疑わない（クイズの minlen=999 と同じ考え方）
+  const latin = !rel.startsWith('英語/');
   const ng = [];
   const say = (m) => ng.push(m);
   const { APP, WORKS } = load(path.join(dir, 'data-works.js'));
@@ -73,6 +76,7 @@ function check(rel) {
 
   // ---- 作品と巻 ----
   const ids = new Set();
+  const gtext = {};            // 「作品id/章」→ その章の原文（語注の突き合わせ用）
   let nMaki = 0, nChar = 0, nPara = 0;
   for (const w of WORKS) {
     if (ids.has(w.id)) say(`作品idの重複: ${w.id}`);
@@ -85,7 +89,7 @@ function check(rel) {
     // 作品の解説にも、書いているうちに他言語がまぎれこむことがある
     for (const t of [w.lead, w.era, w.genre || ''].concat(w.about || [])) {
       if (NG_SCRIPT.test(t)) say(`${w.id}: 解説に日本語以外の文字 ${t.slice(0, 30)}`);
-      const lat = t.match(LATIN_WORD);
+      const lat = latin && t.match(LATIN_WORD);
       if (lat) say(`${w.id}: 解説に英単語 ${lat.join(',')}`);
     }
     // 出どころの注記は、底本名やライセンス名に欧文が入るので日本語以外の字だけ見る
@@ -105,7 +109,7 @@ function check(rel) {
       (m.summary || []).forEach((s, j) => {
         if (s.length < 20) say(`${at}: 要約${j + 1}が短すぎる`);
         if (NG_SCRIPT.test(s)) say(`${at}: 要約に日本語以外の文字 ${s.slice(0, 30)}`);
-        const lat = s.match(LATIN_WORD);
+        const lat = latin && s.match(LATIN_WORD);
         if (lat) say(`${at}: 要約に英単語 ${lat.join(',')}`);
       });
       if (m.lead && NG_SCRIPT.test(m.lead)) say(`${at}: leadに日本語以外の文字`);
@@ -124,6 +128,8 @@ function check(rel) {
       if (cg !== m.chars[1]) say(`${at}: 原文の字数が合わない（データ${m.chars[1]} / 本文${cg}）`);
       if (m.aligned && y.length !== g.length) say(`${at}: aligned なのに段落数が違う（${y.length}/${g.length}）`);
       nMaki++; nChar += cy + cg; nPara += y.length + g.length;
+      // 語注の突き合わせに使う（原文を1本につないで持つ）
+      gtext[w.id + '/' + m.no] = g.map((p) => p.slice(1)).join('\n').toLowerCase();
 
       for (const [kind, list] of [[!!w.rich, y], [true, g]]) {
         for (const p of list) {
@@ -144,6 +150,26 @@ function check(rel) {
       }
     });
   }
+  // ---- 語注（data-notes.js を置いた分野だけ） ----
+  // 語注の見出しは、その章の原文に実在する語でなければならない。
+  // 記憶で書くと必ず入っていない語がまぎれる（初回に122件のうち18件が実在しなかった）。
+  let nNote = 0;
+  const nf = path.join(dir, 'data-notes.js');
+  if (fs.existsSync(nf)) {
+    const { NOTES } = load(nf);
+    for (const key of Object.keys(NOTES)) {
+      if (!/^[a-z0-9_-]+\/\d+$/.test(key)) { say(`語注のキーがおかしい: ${key}`); continue; }
+      if (gtext[key] === undefined) { say(`語注の行き先がない: ${key}`); continue; }
+      for (const g of NOTES[key]) {
+        nNote++;
+        if (!g.w || !g.d) { say(`${key}: 語注に w か d がない`); continue; }
+        if (NG_SCRIPT.test(g.d)) say(`${key}: 語注の説明に日本語以外の文字 ${g.d.slice(0, 20)}`);
+        // 見出しは原文に出てくる形で書く（大文字小文字は問わない）
+        if (!gtext[key].includes(g.w.toLowerCase())) say(`${key}: 原文に出てこない語注「${g.w}」`);
+      }
+    }
+  }
+
   // ---- 文豪（data-authors.js がある分野だけ） ----
   const af = path.join(dir, 'data-authors.js');
   let nAuth = 0;
@@ -177,7 +203,7 @@ function check(rel) {
       for (const t of [a.lead, a.life, a.home].concat(a.bio, a.person, a.style,
                        (a.books || []).map((b) => b.b))) {
         if (NG_SCRIPT.test(t)) say(`${at}: 文章に日本語以外の文字 ${t.slice(0, 30)}`);
-        const lat = t.match(LATIN_WORD);
+        const lat = latin && t.match(LATIN_WORD);
         if (lat) say(`${at}: 文章に英単語 ${lat.join(',')}`);
       }
       // 肖像
@@ -195,7 +221,7 @@ function check(rel) {
     for (const f of dirImgs) if (!aid.has(f.slice(0, -4))) say(`使われていない肖像: ${f}`);
   }
 
-  return { ng, n: { works: WORKS.length, maki: nMaki, chars: nChar, paras: nPara, auth: nAuth } };
+  return { ng, n: { works: WORKS.length, maki: nMaki, chars: nChar, paras: nPara, auth: nAuth, note: nNote } };
 }
 
 // 収録量の突き合わせ（docs.js）からも check() を呼ぶ。数え方を2か所に置くと値がずれるため
@@ -217,7 +243,8 @@ if (require.main === module) {
       if (r.ng.length > 40) console.log(`    …ほか ${r.ng.length - 40} 件`);
     } else {
       console.log(`✓ ${rel.padEnd(18)} ${s.works}作品 ${s.maki}章 ${s.paras}段 `
-        + `${s.chars.toLocaleString('ja-JP')}字` + (s.auth ? ` 文豪${s.auth}人` : ''));
+        + `${s.chars.toLocaleString('ja-JP')}字` + (s.auth ? ` 文豪${s.auth}人` : '')
+      + (s.note ? ` 語注${s.note}件` : ''));
     }
   }
   if (bad) { console.log(`\n読み物: ${bad}件の問題`); process.exit(1); }
