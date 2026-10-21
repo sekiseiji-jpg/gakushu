@@ -198,21 +198,28 @@ function check(rel) {
   return { ng, n: { works: WORKS.length, maki: nMaki, chars: nChar, paras: nPara, auth: nAuth } };
 }
 
-const want = process.argv.slice(2);
-const list = want.length ? want : READERS;
-let bad = 0;
-for (const rel of list) {
-  const r = check(rel);
-  const s = r.n;
-  if (r.ng.length) {
-    bad += r.ng.length;
-    console.log(`✗ ${rel}`);
-    for (const m of r.ng.slice(0, 40)) console.log('    ' + m);
-    if (r.ng.length > 40) console.log(`    …ほか ${r.ng.length - 40} 件`);
-  } else {
-    console.log(`✓ ${rel.padEnd(18)} ${s.works}作品 ${s.maki}章 ${s.paras}段 `
-      + `${s.chars.toLocaleString('ja-JP')}字` + (s.auth ? ` 文豪${s.auth}人` : ''));
+// 収録量の突き合わせ（docs.js）からも check() を呼ぶ。数え方を2か所に置くと値がずれるため
+// （知見 12.4）、数えるのはここだけにする。
+module.exports = { check, READERS };
+
+// ---- ここから下はコマンドとして動かしたときだけ ----
+if (require.main === module) {
+  const want = process.argv.slice(2);
+  const list = want.length ? want : READERS;
+  let bad = 0;
+  for (const rel of list) {
+    const r = check(rel);
+    const s = r.n;
+    if (r.ng.length) {
+      bad += r.ng.length;
+      console.log(`✗ ${rel}`);
+      for (const m of r.ng.slice(0, 40)) console.log('    ' + m);
+      if (r.ng.length > 40) console.log(`    …ほか ${r.ng.length - 40} 件`);
+    } else {
+      console.log(`✓ ${rel.padEnd(18)} ${s.works}作品 ${s.maki}章 ${s.paras}段 `
+        + `${s.chars.toLocaleString('ja-JP')}字` + (s.auth ? ` 文豪${s.auth}人` : ''));
+    }
   }
+  if (bad) { console.log(`\n読み物: ${bad}件の問題`); process.exit(1); }
+  console.log('\n読み物: 問題なし');
 }
-if (bad) { console.log(`\n読み物: ${bad}件の問題`); process.exit(1); }
-console.log('\n読み物: 問題なし');
