@@ -1,13 +1,15 @@
-// 収録量の数字を実データから出して、ドキュメントの記述と突き合わせる。
+// ドキュメントの数字と日付を、実データ・リポジトリの状態と突き合わせる。
 // 数えられる数字だけがズレる、という形で何度も事故が起きた（知見 15.3 / 16.3）。
 //   ・README.md と 設計書.md の「収録量」の表 … 分野ごとの9列と合計行
 //   ・図版の内訳（表・図・地図・写真）
 //   ・再現プロンプト.md の教科ごとの表と合計行
 //   ・検索索引の件数（分野・単元・用語）
 //   ・読み物2分野の量（作品・章・字数・文豪）… 数え方は reader.js のものを使う
+//   ・「最終更新」の日付 … 行があるか、直したのに上げ忘れていないか
 // 使い方: node tools/check/docs.js
 const fs = require('fs');
 const path = require('path');
+const { execFileSync } = require('child_process');
 const { ROOT, APPS, label, pad } = require('./lib.js');
 const { check: readerCheck, READERS } = require('./reader.js');
 
@@ -272,6 +274,54 @@ checkTable('社会/設計書.md');
   }
 }
 
+// ---- 6. 「最終更新」の日付 ----
+// 現状を述べるドキュメント。社会/日本史/ の3本は日本史1本だけだったころの記録なので入れない
+// （知見 15.2 の「追記章は積む、本文は上書きする」の区別）。
+const DOCS = ['README.md', '公開手順.md', '社会/設計書.md', '社会/知見.md',
+              '社会/再現プロンプト.md', 'tools/check/README.md'];
+{
+  const today = (() => {
+    const d = new Date();
+    const p = (n) => String(n).padStart(2, '0');
+    return d.getFullYear() + '-' + p(d.getMonth() + 1) + '-' + p(d.getDate());
+  })();
+
+  // git があれば「最後にコミットした日」と「未コミットの変更があるか」を見る。
+  // tools/check は Node だけで動くのが建前なので、git が無い・リポジトリでない場合は
+  // 日付の行があるかどうかだけ見て、くらべるのは飛ばす。
+  const git = (args) => execFileSync('git', args, { cwd: ROOT, encoding: 'utf8' }).trim();
+  let useGit = true;
+  try { git(['rev-parse', '--git-dir']); } catch (e) { useGit = false; }
+
+  for (const file of DOCS) {
+    const md = fs.readFileSync(path.join(ROOT, file), 'utf8');
+    const m = /^最終更新: (\d{4}-\d{2}-\d{2})\s*$/m.exec(md);
+    if (!m) {
+      // 日付つきで何か書いてあるのか、行そのものが無いのかを分けて知らせる
+      say(file, /^最終更新:/m.test(md)
+        ? '「最終更新:」の日付が YYYY-MM-DD の形になっていない'
+        : '「最終更新: YYYY-MM-DD」の行がない');
+      continue;
+    }
+    const wrote = m[1];
+    if (!useGit) continue;
+
+    const dirty = git(['status', '--porcelain', '--', file]) !== '';
+    if (dirty) {
+      // いま直している最中。all.js はコミット前に通すものなので、ここで気づけるのが肝心。
+      if (wrote !== today)
+        say(file, '直しているのに最終更新が ' + wrote + '（今日は ' + today + '）');
+    } else {
+      const last = git(['log', '-1', '--format=%cs', '--', file]);
+      if (!last) say(file, 'コミットされていないのに変更もない（追跡されていない？）');
+      else if (wrote < last)
+        say(file, '最終更新が ' + wrote + '（最後のコミットは ' + last + '）');
+    }
+  }
+  console.log(pad('最終更新', 14) + DOCS.length + '本' +
+    (useGit ? '（今日 ' + today + '／git で上げ忘れも見た）' : '（git が無いので日付の形だけ見た）'));
+}
+
 // ---- まとめ ----
 console.log(pad('クイズ19分野', 14) + names.length + '分野 ' + total('unit') + '単元 ' + total('quiz') + '問 図版' +
   total('fig') + '点（表' + total('table') + ' 図' + total('svg') + ' 地図' + total('map') + ' 写真' + total('photo') + '）');
@@ -279,7 +329,7 @@ console.log(pad('クイズ19分野', 14) + names.length + '分野 ' + total('uni
 console.log('');
 if (ng.length) {
   for (const m of ng) console.log('✗ ' + m);
-  console.log('\n収録量: ' + ng.length + '件のくいちがい');
+  console.log('\nドキュメント: ' + ng.length + '件のくいちがい');
   process.exit(1);
 }
-console.log('✓ README.md・設計書.md・再現プロンプト.md の収録量は実データと一致している');
+console.log('✓ 収録量は実データと一致し、最終更新の日付もそろっている');

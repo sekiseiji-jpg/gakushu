@@ -1,5 +1,5 @@
 // クイズの全19分野に chk・figs・bias・xref・xord・xsel を、読み物2分野に reader を、
-// 版の番号（?v= と CACHE）には ver、ドキュメントの収録量には docs をかけ、最後に要約を出す。
+// 版の番号（?v= と CACHE）には ver、ドキュメントの数字と日付には docs をかけ、最後に要約を出す。
 // 使い方: node tools/check/all.js [-v]      -v をつけると chk の内訳もすべて表示する
 const path = require('path');
 const { execFileSync } = require('child_process');
@@ -50,8 +50,8 @@ console.log('\n=== ver（?v= と CACHE の番号） ===');
 const rv = run('ver.js', []);
 process.stdout.write(rv.out);
 
-// ---- ドキュメントの収録量 ----
-console.log('\n=== docs（ドキュメントの収録量と実データ） ===');
+// ---- ドキュメントの数字と日付 ----
+console.log('\n=== docs（ドキュメントの数字と日付） ===');
 const rd = run('docs.js', []);
 process.stdout.write(rd.out);
 
@@ -84,7 +84,7 @@ console.log(APPS.length + '分野 ' + (ngChk.length ? okChk + '分野OK・' + ng
   ' ／ 矛盾' + (nx + no + ns) + (rr.code ? ' ／ 読み物NG' : ' ／ 読み物OK') +
   (rf.code ? ' ／ 図版NG' : ' ／ 図版OK') +
   (rv.code ? ' ／ 版NG' : ' ／ 版OK') +
-  (rd.code ? ' ／ 収録量NG' : ' ／ 収録量OK') +
+  (rd.code ? ' ／ ドキュメントNG' : ' ／ ドキュメントOK') +
   (rb.code ? ' ／ 偏り警告あり' : ''));
 
 const bad = ngChk.length || nx || no || ns || rb.code || rr.code || rf.code || rv.code || rd.code;
