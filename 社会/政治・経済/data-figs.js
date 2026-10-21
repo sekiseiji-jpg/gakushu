@@ -102,7 +102,7 @@ kenpou: [
 
 touchi: [
   { at: 'ov', k: 'photo', t: '国会議事堂', src: 'img/kokkai.jpg',
-    cap: '国権の最高機関であり、国の唯一の立法機関（第41条）。左が衆議院、右が参議院。', credit: 'ウィキメディア・コモンズ「National Diet Building - Tokyo, Japan - DSC06736.JPG」（CC0）' },
+    cap: '国権の最高機関であり、国の唯一の立法機関（第41条）。正面から見て左が衆議院、右が参議院。1936年の完成。', credit: 'ウィキメディア・コモンズ「National Diet Building(in 2025).jpg」（Public domain）' },
   { at: 'ov', k: 'svg', t: '三権分立のしくみ',
     cap: '三つの機関が互いに抑えあう。矢印の一つひとつが、具体的な権限にあたる。',
     svg: '<svg viewBox="0 0 640 235" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="三権分立の図">'
@@ -131,8 +131,10 @@ touchi: [
       + '<rect x="200" y="196" width="240" height="30" rx="7" fill="var(--surface2)" stroke="var(--border)"/>'
       + '<text x="320" y="216" font-size="11.5">国民　選挙・世論・国民審査</text>'
       + '</g></svg>' },
-  { at: 'sec2', k: 'photo', t: '最高裁判所', src: 'img/saikousai.jpg',
-    cap: '違憲審査の終審裁判所であることから「憲法の番人」と呼ばれる。ただし実際に法令を違憲とした例は多くない。', credit: 'ウィキメディア・コモンズ「The-Supreme-Court-of-Japan-1.jpg」（CC0）' },
+  { at: 'sec2', k: 'photo', t: '最高裁判所 大法廷', src: 'img/saikousai.jpg',
+    cap: '15人の裁判官全員で審理する法廷。憲法判断や判例の変更はここで行う。違憲審査の終審裁判所なので「憲法の番人」と呼ばれる。', credit: 'ウィキメディア・コモンズ「The Grand Bench of the Japanese Supreme Court.jpg」（Public domain）' },
+  { at: 'sec0', k: 'photo', t: '衆議院本会議場', src: 'img/gijou.jpg',
+    cap: '扇形に広がる議席の中心に演壇と議長席を置く。議場の形は国会議事堂が完成した当時から変わっていない。', credit: 'ウィキメディア・コモンズ「The Assembly Hall of National Diet.jpg」（Public domain）' },
   { at: 'sec0', k: 'table', t: '衆議院の優越',
     cap: '任期が短く解散もあるため、民意をより新しく反映しているとされ、いくつかの点で優越する。',
     head: ['事項', '衆議院の優越'],
@@ -381,8 +383,8 @@ shijou: [
 ],
 
 kinyuu: [
-  { at: 'ov', k: 'photo', t: '日本銀行本店', src: 'img/nichigin.jpg',
-    cap: '発券銀行・銀行の銀行・政府の銀行という三つの顔をもつ。物価の安定と金融システムの安定を任務とする。', credit: 'ウィキメディア・コモンズ「Bank of Japan building (79799).jpg」（CC0）' },
+  { at: 'ov', k: 'photo', t: '日本銀行本店本館', src: 'img/nichigin.jpg',
+    cap: '1896年、辰野金吾の設計。上から見ると「円」の字の形になっている。発券銀行・銀行の銀行・政府の銀行という三つの顔をもつ。', credit: 'ウィキメディア・コモンズ「Bank of Japan headquarters in Tokyo, Japan.jpg」（Public domain）' },
   { at: 'sec1', k: 'table', t: '金融政策の手段',
     cap: '景気が悪いときは世の中のお金を増やし、物価が上がりすぎるときは減らす。',
     head: ['手段', '不況のとき', '好況・インフレのとき'],

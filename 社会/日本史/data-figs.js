@@ -118,8 +118,8 @@ kofun: [
 ],
 
 asuka: [
-  { at: 'ov', k: 'photo', t: '法隆寺', src: 'img/horyuji.jpg',
-    cap: '現存する世界最古の木造建築群。エンタシスの柱や雲斗・雲肘木に、飛鳥文化の特徴が見える。', credit: 'ウィキメディア・コモンズ「Histoire de l’art du Japon; (1900) (14772565742).jpg」（No restrictions）' },
+  { at: 'ov', k: 'photo', t: '法隆寺 西院伽藍', src: 'img/horyuji.jpg',
+    cap: '左が金堂、右が五重塔。現存する世界最古の木造建築群で、エンタシスの柱や雲斗・雲肘木に飛鳥文化の特徴が見える。', credit: 'ウィキメディア・コモンズ「Horyu-ji Kondo and Five-story Pagoda 2022.jpg」（CC0）' },
   { at: 'sec3', k: 'table', t: '律令のしくみを一枚で',
     cap: '中央・地方・税・兵が一つの戸籍でつながっている。これが崩れると律令体制全体が崩れる。',
     head: ['項目', '内容', '補足'],
@@ -194,7 +194,7 @@ nara: [
 
 heian: [
   { at: 'ov', k: 'photo', t: '平等院鳳凰堂', src: 'img/byodoin.jpg',
-    cap: '藤原頼通が建てた阿弥陀堂。末法の世に極楽往生を願う浄土教の広がりを、建物の形で示している。', credit: 'ウィキメディア・コモンズ「Byodoin-Phoenix-M1234.jpg」（Public domain）' },
+    cap: '藤原頼通が建てた阿弥陀堂。池にうつる姿が極楽浄土を思わせる。末法の世に往生を願う浄土教の広がりを、建物の形で示している。', credit: 'ウィキメディア・コモンズ「平等院鳳凰堂（2023年）.jpg」（CC0）' },
   { at: 'sec1', k: 'svg', t: '摂関政治のしくみ',
     cap: '娘を天皇の后にし、生まれた皇子を天皇に立てる。外戚になることが権力の源だった。',
     svg: '<svg viewBox="0 0 640 190" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="摂関政治のしくみの図">'

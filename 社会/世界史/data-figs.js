@@ -281,7 +281,7 @@ islam: [
       + '<text x="20" y="222" font-size="11" fill="var(--muted)">※位置関係をつかむための略図です</text>'
       + '</g></svg>' },
   { at: 'ov', k: 'photo', t: '岩のドーム（エルサレム）', src: 'img/mosque.jpg',
-    cap: '7世紀末にウマイヤ朝が建てた、現存する最古級のイスラーム建築。1900年ごろの写真。', credit: 'ウィキメディア・コモンズ「Dome of the Rock. Tvuaat HaAretz. 1900.jpg」（Public domain）' },
+    cap: '7世紀末にウマイヤ朝が建てた、現存する最古級のイスラーム建築。手前右は鎖のドーム。1900年ごろの写真。', credit: 'ウィキメディア・コモンズ「Jerusalem. Mosquée d’Omar LCCN2003653104.jpg」（Public domain）' },
   { at: 'sec1', k: 'table', t: 'イスラーム世界のおもな王朝',
     cap: 'カリフの地位をめぐる対立と、各地の自立が重なって、イスラーム世界は多極化していった。',
     head: ['王朝', '時期', '都', '特徴'],
