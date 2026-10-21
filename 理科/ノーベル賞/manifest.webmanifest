@@ -1,0 +1,16 @@
+{
+  "name": "日本人のノーベル賞",
+  "short_name": "ノーベル賞",
+  "description": "日本人のノーベル賞受賞者（理化学分野）28人の一覧。",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#fbf8f1",
+  "theme_color": "#8a6a1f",
+  "lang": "ja",
+  "icons": [
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}

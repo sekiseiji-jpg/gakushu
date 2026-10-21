@@ -1,4 +1,5 @@
-/* 読み物アプリの本体（古典文学・近現代文学・英米文学で同じものを使う）
+/* 読み物アプリの本体（古典文学・近現代文学・英米文学・日本人のノーベル賞で同じものを使う）
+   作品を持たず人物だけを並べる分野もある（WORKS が空のとき、人物一覧が入口になる）。
    画面は3つ（作品一覧 / 作品の扉 / 本文）。URLのハッシュで行き来する。
      #w=genji            作品の扉
      #w=genji&m=5        第5（巻・帖・章…）
@@ -531,6 +532,8 @@
 
   /* ---------- 画面4・5 文豪（data-authors.js があるときだけ） ---------- */
   var HAS_AUTHORS = (typeof AUTHORS !== 'undefined') && AUTHORS.length > 0;
+  var HAS_WORKS = WORKS.length > 0;          // 人物だけの分野（ノーベル賞一覧など）は作品がない
+  var AS = APP.authorSections || {};         // 人物ページの見出し。分野によって呼び名が変わる
   var authorById = {}, authorOfWork = {};
   if (HAS_AUTHORS) {
     AUTHORS.forEach(function (a) {
@@ -538,7 +541,9 @@
       (a.works || []).forEach(function (wid) { authorOfWork[wid] = a; });
     });
   }
+  // 肖像は photo を持つ人にだけ出す（写真を載せない分野もある）
   function portrait(a, cls) {
+    if (!a.photo) return null;
     var im = document.createElement('img');
     im.className = cls;
     im.src = 'authors/' + a.id + '.jpg';
@@ -548,19 +553,20 @@
     return im;
   }
   function renderAuthors() {
-    $('authors-lead').textContent =
-      'この本棚に作品を収めた' + AUTHORS.length + '人です。生まれた年の順に並べています。';
+    $('authors-lead').textContent = APP.authorsLead
+      || ('この本棚に作品を収めた' + AUTHORS.length + '人です。生まれた年の順に並べています。');
     var box = $('author-list');
     box.textContent = '';
     AUTHORS.forEach(function (a) {
-      var b = el('button', 'pcard');
-      b.appendChild(portrait(a, 'pimg'));
+      var b = el('button', 'pcard' + (a.photo ? '' : ' nopic'));
+      var im = portrait(a, 'pimg');
+      if (im) b.appendChild(im);
       var t = el('div', 'pt');
       t.appendChild(el('h2', null, a.name));
       t.appendChild(el('div', 'ym', a.yomi));
-      t.appendChild(el('div', 'yr', a.born + '〜' + a.died));
+      t.appendChild(el('div', 'yr', a.born + '〜' + (a.died || '')));
       t.appendChild(el('div', 'ld', a.lead));
-      t.appendChild(el('div', 'meta', '収録 ' + (a.works || []).length + '作品'));
+      t.appendChild(el('div', 'meta', a.meta || ('収録 ' + (a.works || []).length + '作品')));
       b.appendChild(t);
       b.onclick = function () { go('#a=' + a.id); };
       box.appendChild(b);
@@ -569,7 +575,8 @@
   function renderAuthor(a) {
     var h = $('author-hero');
     h.textContent = '';
-    h.appendChild(portrait(a, 'bimg'));
+    var bim = portrait(a, 'bimg');
+    if (bim) h.appendChild(bim);
     var t = el('div', 'ph');
     t.appendChild(el('h2', null, a.name));
     t.appendChild(el('div', 'ym', a.yomi + (a.real ? '　本名 ' + a.real : '')));
@@ -590,11 +597,12 @@
       return s;
     }
     function paras(s, xs) { xs.forEach(function (p) { s.appendChild(el('p', null, p)); }); }
-    paras(sect('略歴'), a.bio);
-    paras(sect('どういう人物か'), a.person);
-    paras(sect('どんな作品を書いたか'), a.style);
+    paras(sect(AS.bio || '略歴'), a.bio);
+    paras(sect(AS.person || 'どういう人物か'), a.person);
+    paras(sect(AS.style || 'どんな作品を書いたか'), a.style);
 
-    var s1 = sect('この本棚に入っている作品');
+    if (HAS_WORKS) {
+    var s1 = sect(AS.works || 'この本棚に入っている作品');
     var g = el('div', 'awork');
     (a.works || []).forEach(function (wid) {
       var w = workById[wid];
@@ -609,8 +617,9 @@
       g.appendChild(b);
     });
     s1.appendChild(g);
+    }
 
-    var s2 = sect('ほかの代表作');
+    var s2 = sect(AS.books || 'ほかの代表作');
     var bl = el('div', 'books');
     (a.books || []).forEach(function (bk) {
       var r = el('div', 'bk');
@@ -623,10 +632,12 @@
     });
     s2.appendChild(bl);
 
-    var s3 = sect('写真について', 'src');
-    s3.appendChild(el('p', null,
-      'ウィキメディア・コモンズ「' + a.photo.file + '」（' + a.photo.lic
-      + '）。著作権の保護期間が満了した写真です。'));
+    if (a.photo) {
+      var s3 = sect('写真について', 'src');
+      s3.appendChild(el('p', null,
+        'ウィキメディア・コモンズ「' + a.photo.file + '」（' + a.photo.lic
+        + '）。著作権の保護期間が満了した写真です。'));
+    }
   }
 
   /* ---------- 画面の切り替え ---------- */
@@ -637,7 +648,7 @@
     });
     var sw = $('top-switch');
     if (sw) {
-      sw.classList.toggle('hidden', v !== 'works' && v !== 'authors');
+      sw.classList.toggle('hidden', !HAS_WORKS || (v !== 'works' && v !== 'authors'));
       sw.querySelectorAll('[data-top]').forEach(function (b) {
         b.classList.toggle('on', b.dataset.top === v);
       });
@@ -699,6 +710,12 @@
       show('work');
       $('bar-title').textContent = w.title;
       window.scrollTo(0, 0);
+      return;
+    }
+    if (!HAS_WORKS && HAS_AUTHORS) {       // 人物だけの分野は、人物一覧が入口になる
+      renderAuthors();
+      show('authors');
+      $('bar-title').textContent = APP.title;
       return;
     }
     renderWorks();

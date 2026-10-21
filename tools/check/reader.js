@@ -10,9 +10,10 @@
 // 使い方: node tools/check/reader.js [国語/近現代文学 ...]   （無指定なら読み物すべて）
 const fs = require('fs');
 const path = require('path');
+const { minlenFor } = require('./lib.js');
 
 const ROOT = path.dirname(path.dirname(__dirname));
-const READERS = ['国語/古典文学', '国語/近現代文学', '英語/英米文学'];
+const READERS = ['国語/古典文学', '国語/近現代文学', '英語/英米文学', '理科/ノーベル賞'];
 
 // data-works.js / data-authors.js を読み込む。
 // 末尾に module.exports があるので、偽の module を渡して評価すれば取り出せる（lib.js と同じ方式）。
@@ -45,7 +46,9 @@ function readText(file) {
 }
 
 const NG_SCRIPT = /[Ѐ-ӿ؀-ۿ가-힯]/;   // キリル・アラビア・ハングル
-const LATIN_WORD = /[A-Za-z]{3,}/g;
+// 何文字以上のラテン文字を疑うかは教科で違う（クイズの言語チェックと同じ基準を使う）。
+// 理科・数学は 4 以上（iPS細胞・GFPのような略語を本文に書くため）、社会・国語は 3 以上。
+const latinRe = (rel) => new RegExp('[A-Za-z]{' + Math.max(3, minlenFor(rel)) + ',}', 'g');
 // 本文には原典由来の欧文が出てくるので、要約・見出しだけ厳しく見る
 // p=本文 v=韻文 c=地寄せ h=小見出し（大文字は前を一行あける）／ w=和歌（古典文学の原文）
 const KIND = /^[pPvVcChw]/;
@@ -53,7 +56,7 @@ const KIND = /^[pPvVcChw]/;
 function check(rel) {
   const dir = path.join(ROOT, rel);
   // 英語の読み物は原文が英語なので、ラテン文字を疑わない（クイズの minlen=999 と同じ考え方）
-  const latin = !rel.startsWith('英語/');
+  const latin = rel.startsWith('英語/') ? null : latinRe(rel);
   const ng = [];
   const say = (m) => ng.push(m);
   const { APP, WORKS } = load(path.join(dir, 'data-works.js'));
@@ -89,7 +92,7 @@ function check(rel) {
     // 作品の解説にも、書いているうちに他言語がまぎれこむことがある
     for (const t of [w.lead, w.era, w.genre || ''].concat(w.about || [])) {
       if (NG_SCRIPT.test(t)) say(`${w.id}: 解説に日本語以外の文字 ${t.slice(0, 30)}`);
-      const lat = latin && t.match(LATIN_WORD);
+      const lat = latin && t.match(latin);
       if (lat) say(`${w.id}: 解説に英単語 ${lat.join(',')}`);
     }
     // 出どころの注記は、底本名やライセンス名に欧文が入るので日本語以外の字だけ見る
@@ -109,7 +112,7 @@ function check(rel) {
       (m.summary || []).forEach((s, j) => {
         if (s.length < 20) say(`${at}: 要約${j + 1}が短すぎる`);
         if (NG_SCRIPT.test(s)) say(`${at}: 要約に日本語以外の文字 ${s.slice(0, 30)}`);
-        const lat = latin && s.match(LATIN_WORD);
+        const lat = latin && s.match(latin);
         if (lat) say(`${at}: 要約に英単語 ${lat.join(',')}`);
       });
       if (m.lead && NG_SCRIPT.test(m.lead)) say(`${at}: leadに日本語以外の文字`);
@@ -170,12 +173,14 @@ function check(rel) {
     }
   }
 
-  // ---- 文豪（data-authors.js がある分野だけ） ----
+  // ---- 人物（data-authors.js がある分野だけ。文豪・作家・受賞者） ----
   const af = path.join(dir, 'data-authors.js');
   let nAuth = 0;
   if (fs.existsSync(af)) {
     const { AUTHORS } = load(af);
     nAuth = AUTHORS.length;
+    // 作品のない分野（人物だけを並べるもの）がある。作品との結びつきはそのときだけ見る
+    const hasWorks = WORKS.length > 0;
     const names = new Set(WORKS.map((w) => w.author));
     const seen = new Set();
     const aid = new Set();
@@ -186,14 +191,17 @@ function check(rel) {
       for (const k of ['name', 'yomi', 'life', 'home', 'lead']) {
         if (!a[k]) say(`${at}: ${k} がない`);
       }
-      if (!names.has(a.name)) say(`${at}: ${a.name} という著者の作品が WORKS にない`);
+      if (hasWorks && !names.has(a.name)) say(`${at}: ${a.name} という著者の作品が WORKS にない`);
       seen.add(a.name);
-      if (!(a.born < a.died && a.born > 1700 && a.died < 2100)) say(`${at}: 生没年がおかしい`);
-      for (const k of ['bio', 'person', 'style', 'books', 'tags', 'works']) {
+      // 存命の人は died がない
+      if (!(a.born > 1700 && a.born < 2100)) say(`${at}: 生年がおかしい`);
+      if (a.died && !(a.born < a.died && a.died < 2100)) say(`${at}: 没年がおかしい`);
+      const need = ['bio', 'person', 'style', 'books', 'tags'].concat(hasWorks ? ['works'] : []);
+      for (const k of need) {
         if (!Array.isArray(a[k]) || !a[k].length) say(`${at}: ${k} がない`);
       }
       const mine = WORKS.filter((w) => w.author === a.name).map((w) => w.id).sort().join(',');
-      if ((a.works || []).slice().sort().join(',') !== mine) {
+      if (hasWorks && (a.works || []).slice().sort().join(',') !== mine) {
         say(`${at}: works が WORKS と合わない（${(a.works || []).join(',')} / ${mine}）`);
       }
       for (const b of a.books || []) {
@@ -203,25 +211,32 @@ function check(rel) {
       for (const t of [a.lead, a.life, a.home].concat(a.bio, a.person, a.style,
                        (a.books || []).map((b) => b.b))) {
         if (NG_SCRIPT.test(t)) say(`${at}: 文章に日本語以外の文字 ${t.slice(0, 30)}`);
-        const lat = latin && t.match(LATIN_WORD);
+        const lat = latin && t.match(latin);
         if (lat) say(`${at}: 文章に英単語 ${lat.join(',')}`);
       }
-      // 肖像
-      const img = path.join(dir, 'authors', a.id + '.jpg');
-      if (!fs.existsSync(img)) say(`${at}: 肖像 authors/${a.id}.jpg がない`);
-      else if (fs.statSync(img).size > 60 * 1024) say(`${at}: 肖像が大きすぎる`);
-      if (!a.photo || !/^public domain/i.test(a.photo.lic || '')) {
-        say(`${at}: 肖像の権利が「Public domain」でない`);
+      // 肖像。photo を書いた人にだけある（写真を載せない分野もある）
+      if (a.photo) {
+        const img = path.join(dir, 'authors', a.id + '.jpg');
+        if (!fs.existsSync(img)) say(`${at}: 肖像 authors/${a.id}.jpg がない`);
+        else if (fs.statSync(img).size > 60 * 1024) say(`${at}: 肖像が大きすぎる`);
+        if (!/^public domain/i.test(a.photo.lic || '')) {
+          say(`${at}: 肖像の権利が「Public domain」でない`);
+        }
+        if (!a.photo.file || !a.photo.page) say(`${at}: 肖像の出どころがない`);
       }
-      if (!a.photo || !a.photo.file || !a.photo.page) say(`${at}: 肖像の出どころがない`);
     }
-    for (const n of names) if (!seen.has(n)) say(`著者 ${n} の紹介がない`);
-    // 余分な画像が残っていないか
-    const dirImgs = fs.readdirSync(path.join(dir, 'authors')).filter((f) => f.endsWith('.jpg'));
-    for (const f of dirImgs) if (!aid.has(f.slice(0, -4))) say(`使われていない肖像: ${f}`);
+    if (hasWorks) for (const n of names) if (!seen.has(n)) say(`著者 ${n} の紹介がない`);
+    // 余分な画像が残っていないか（肖像を置かない分野にはフォルダ自体がない）
+    const adir = path.join(dir, 'authors');
+    if (fs.existsSync(adir)) {
+      for (const f of fs.readdirSync(adir).filter((x) => x.endsWith('.jpg'))) {
+        if (!aid.has(f.slice(0, -4))) say(`使われていない肖像: ${f}`);
+      }
+    }
   }
 
-  return { ng, n: { works: WORKS.length, maki: nMaki, chars: nChar, paras: nPara, auth: nAuth, note: nNote } };
+  return { ng, n: { works: WORKS.length, maki: nMaki, chars: nChar, paras: nPara, auth: nAuth, note: nNote,
+                    word: APP.authorWord || '文豪' } };
 }
 
 // 収録量の突き合わせ（docs.js）からも check() を呼ぶ。数え方を2か所に置くと値がずれるため
@@ -242,9 +257,10 @@ if (require.main === module) {
       for (const m of r.ng.slice(0, 40)) console.log('    ' + m);
       if (r.ng.length > 40) console.log(`    …ほか ${r.ng.length - 40} 件`);
     } else {
-      console.log(`✓ ${rel.padEnd(18)} ${s.works}作品 ${s.maki}章 ${s.paras}段 `
-        + `${s.chars.toLocaleString('ja-JP')}字` + (s.auth ? ` 文豪${s.auth}人` : '')
-      + (s.note ? ` 語注${s.note}件` : ''));
+      const body = s.works ? `${s.works}作品 ${s.maki}章 ${s.paras}段 ${s.chars.toLocaleString('ja-JP')}字` : '';
+      console.log(`✓ ${rel.padEnd(18)} ` + body
+        + (s.auth ? `${body ? ' ' : ''}${s.word}${s.auth}人` : '')
+        + (s.note ? ` 語注${s.note}件` : ''));
     }
   }
   if (bad) { console.log(`\n読み物: ${bad}件の問題`); process.exit(1); }

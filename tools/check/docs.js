@@ -191,7 +191,7 @@ checkTable('社会/設計書.md');
         done.add('合計');
         continue;
       }
-      if (sub.includes('読み物')) continue;   // 読み物は 5 で見る
+      if (sub.includes('読み物') || sub.includes('人物一覧')) continue;   // 読み物と人物一覧は 5 で見る
       if (bySub[sub] === undefined) { say(f, '表にない教科「' + sub + '」が書かれている'); continue; }
       done.add(sub);
       eq(f + ' ' + sub, 'クイズ', num(row[2]), bySub[sub]);
@@ -246,8 +246,10 @@ checkTable('社会/設計書.md');
   const ko = got['国語/古典文学'], kin = got['国語/近現代文学'], eib = got['英語/英米文学'];
   console.log(pad('読み物', 14) + READERS.map((rel) => {
     const n = got[rel];
-    return rel.split('/')[1] + ' ' + n.works + '作品' + n.maki + '章' + man(n.chars) + '万字'
-      + (n.auth ? ' 文豪' + n.auth + '人' : '') + (n.note ? ' 語注' + n.note + '件' : '');
+    const body = n.works ? n.works + '作品' + n.maki + '章' + man(n.chars) + '万字' : '';
+    return rel.split('/')[1] + ' ' + body
+      + (n.auth ? (body ? ' ' : '') + n.word + n.auth + '人' : '')
+      + (n.note ? ' 語注' + n.note + '件' : '');
   }).join(' ／ '));
 
   // 再現プロンプト: 「古典文学：4作品85巻（約262万字）／近現代文学：30作品214章（約160万字）・文豪26人」
@@ -275,6 +277,12 @@ checkTable('社会/設計書.md');
     eq(f + ' 英米文学', '語注の数', Number(m2[5]), eib.note);
   }
 
+  // 再現プロンプト: 「日本人のノーベル賞：理化学分野の受賞者28人」
+  const nob = got['理科/ノーベル賞'];
+  const m3 = /日本人のノーベル賞：理化学分野の受賞者(\d+)人/.exec(md);
+  if (!m3) say(f, 'ノーベル賞の欄が見つからない');
+  else eq(f + ' ノーベル賞', '受賞者の数', Number(m3[1]), nob.auth);
+
   // 設計書 13章の表: 行ごとに「…巻・約…万字」「…章・約…万字」
   const g = '社会/設計書.md';
   const gmd = fs.readFileSync(path.join(ROOT, g), 'utf8');
@@ -287,6 +295,9 @@ checkTable('社会/設計書.md');
     eq(g + ' 読み物', '近現代文学の章数', Number(b[1]), kin.maki);
     eq(g + ' 読み物', '近現代文学の字数（万）', Number(b[2]), man(kin.chars));
   }
+  const c3 = /\|\s*日本人のノーベル賞\s*\|[^|]*\|\s*(\d+)人\s*\|/.exec(gmd);
+  if (!c3) say(g, '13章の表に日本人のノーベル賞の行がない');
+  else eq(g + ' 読み物', 'ノーベル賞の受賞者数', Number(c3[1]), nob.auth);
   if (!c2) say(g, '13章の表に英米文学の行がない');
   else {
     eq(g + ' 読み物', '英米文学の章数', Number(c2[1]), eib.maki);

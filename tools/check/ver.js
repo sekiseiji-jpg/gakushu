@@ -9,7 +9,7 @@ const fs = require('fs');
 const path = require('path');
 const { ROOT, APPS, MINLEN, pad } = require('./lib.js');
 
-const READERS = ['国語/古典文学', '国語/近現代文学', '英語/英米文学'];
+const READERS = ['国語/古典文学', '国語/近現代文学', '英語/英米文学', '理科/ノーベル賞'];
 const SUBJECTS = Object.keys(MINLEN);        // 社会・理科・数学・国語・英語
 
 // そのファイルに出てくる ?v=N の番号を重複なしで返す

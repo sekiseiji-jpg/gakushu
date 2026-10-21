@@ -63,9 +63,13 @@ for (const sub of SUBJECTS) {
     const d = path.join(dir, name);
     if (!fs.statSync(d).isDirectory()) continue;
     const m = load(path.join(d, 'data-works.js'), 'WORKS,APP');
-    if (!m || !m.WORKS || !m.WORKS.length) continue;
+    if (!m || !m.WORKS) continue;
+    // 作品がなく人物だけを並べる分野（ノーベル賞一覧）もあるので、どちらかあればよい
+    const ma0 = load(path.join(d, 'data-authors.js'), 'AUTHORS');
+    const nAuth0 = (ma0 && ma0.AUTHORS && ma0.AUTHORS.length) || 0;
+    if (!m.WORKS.length && !nAuth0) continue;
     const url = encodeURIComponent(sub) + '/' + encodeURIComponent(name) + '/';
-    const nMaki = m.WORKS.reduce((a, w) => a + w.maki.length, 0);
+    const nMaki = m.WORKS.reduce((a, w) => a + w.maki.length, 0) || nAuth0;
     fields.push({ s: sub, f: name, t: (m.APP && m.APP.title) || name,
                   i: (m.APP && m.APP.icon) || '📕', u: url, n: nMaki });
     for (const w of m.WORKS) {
@@ -82,7 +86,7 @@ for (const sub of SUBJECTS) {
     // 人物紹介があれば、人名でも引けるようにする（開くときは #u=a-<人物id>）
     // 呼び名は分野で違う（近現代文学は文豪、英米文学は作家）ので APP から取る
     const authorWord = (m.APP && m.APP.authorWord) || '文豪';
-    const ma = load(path.join(d, 'data-authors.js'), 'AUTHORS');
+    const ma = ma0;
     for (const a of (ma && ma.AUTHORS) || []) {
       units.push({
         s: sub, f: name, u: url, id: 'a-' + a.id,
