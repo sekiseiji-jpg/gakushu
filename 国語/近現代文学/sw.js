@@ -1,15 +1,15 @@
 // オフライン対応：骨組みは先に保存し、本文は読んだ章だけをあとから保存する。
 // 全章をまとめて保存する操作は設定シートにあり、ページ側から同じキャッシュに入れる（app.js）。
 // ファイルを更新したときは CACHE の番号を上げる（index.html の ?v= と同じ番号にする）。
-const CACHE = 'kingendai-v6';          // 骨組み（版を上げると入れ替わる）
+const CACHE = 'kingendai-v7';          // 骨組み（版を上げると入れ替わる）
 const TEXTS = 'kingendai-text';     // 本文（版を上げても残す）
 const SHELL = [
   './',
   'index.html',
-  'style.css?v=6',
-  'data-works.js?v=6',
-  'data-authors.js?v=6',
-  'app.js?v=6',
+  'style.css?v=7',
+  'data-works.js?v=7',
+  'data-authors.js?v=7',
+  'app.js?v=7',
   'manifest.webmanifest',
   'icon-192.png',
   'icon-512.png',

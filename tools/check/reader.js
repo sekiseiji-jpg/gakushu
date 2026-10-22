@@ -107,7 +107,7 @@ function check(rel) {
     w.maki.forEach((m, i) => {
       const at = `${w.id}/${m.no}`;
       if (m.no !== i + 1) say(`${at}: 番号が連番でない（${i + 1} のはず）`);
-      if (!Array.isArray(m.chars) || m.chars.length !== 2) say(`${at}: chars が [訳,原文] でない`);
+      if (!Array.isArray(m.chars) || m.chars.length < 2 || m.chars.length > 3) say(`${at}: chars が [訳,原文]（対照用の訳があれば3つめ）でない`);
       if (!Array.isArray(m.summary) || !m.summary.length) say(`${at}: 要約がない`);
       (m.summary || []).forEach((s, j) => {
         if (s.length < 20) say(`${at}: 要約${j + 1}が短すぎる`);
@@ -123,18 +123,28 @@ function check(rel) {
       const t = readText(f);
       if (!t) { say(`${at}: TEXT() を読めない`); return; }
       if (t.no !== m.no) say(`${at}: TEXT() の番号が ${t.no} になっている`);
-      const y = t.data.y || [], g = t.data.g || [];
+      const y = t.data.y || [], g = t.data.g || [], tt = t.data.t || [];
       // 種類つきの段落は先頭1字が種類。訳は rich の作品だけ、原文は常に種類つき。
+      // 対照用の訳（t）は種類を付けない。
       const cy = y.reduce((a, s) => a + clen(w.rich ? s.slice(1) : s), 0);
       const cg = g.reduce((a, s) => a + clen(s.slice(1)), 0);
+      const ct = tt.reduce((a, s) => a + clen(s), 0);
       if (cy !== m.chars[0]) say(`${at}: 訳の字数が合わない（データ${m.chars[0]} / 本文${cy}）`);
       if (cg !== m.chars[1]) say(`${at}: 原文の字数が合わない（データ${m.chars[1]} / 本文${cg}）`);
+      if (m.chars.length > 2) {
+        if (!tt.length) say(`${at}: chars に対照用の訳があるのに本文に t がない`);
+        if (ct !== m.chars[2]) say(`${at}: 対照用の訳の字数が合わない（データ${m.chars[2]} / 本文${ct}）`);
+        if (tt.length !== g.length) say(`${at}: 対照用の訳と原文の段落数が違う（${tt.length}/${g.length}）`);
+        if (m.aligned) say(`${at}: 対照用の訳があるので aligned は要らない`);
+      } else if (tt.length) {
+        say(`${at}: 本文に t があるのに chars が2つしかない`);
+      }
       if (m.aligned && y.length !== g.length) say(`${at}: aligned なのに段落数が違う（${y.length}/${g.length}）`);
-      nMaki++; nChar += cy + cg; nPara += y.length + g.length;
+      nMaki++; nChar += cy + cg + ct; nPara += y.length + g.length + tt.length;
       // 語注の突き合わせに使う（原文を1本につないで持つ）
       gtext[w.id + '/' + m.no] = g.map((p) => p.slice(1)).join('\n').toLowerCase();
 
-      for (const [kind, list] of [[!!w.rich, y], [true, g]]) {
+      for (const [kind, list] of [[!!w.rich, y], [true, g], [false, tt]]) {
         for (const p of list) {
           const body = kind ? p.slice(1) : p;
           if (kind && !KIND.test(p)) say(`${at}: 段落の種類がおかしい ${p.slice(0, 20)}`);

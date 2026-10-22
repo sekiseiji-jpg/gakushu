@@ -359,9 +359,14 @@
 
   /* ---------- 画面3 巻 ---------- */
   var curMaki = null, curType = 'yaku';
-  // その巻にその種類の本文があるか（chars は [訳の字数, 原文の字数]）
+  // その巻にその種類の本文があるか（chars は [訳の字数, 原文の字数]、
+  // 訳が二種類ある作品だけ [訳, 原文, 対照用の訳] の三つ）
   function has(m, type) {
-    if (type === 'taisho') return m.chars[0] > 0 && m.chars[1] > 0 && m.aligned;
+    if (type === 'taisho') {
+      if (!(m.chars[1] > 0)) return false;
+      // 対照用の訳を別に持つ作品はそれを、持たない作品は aligned のついた訳を並べる
+      return m.chars.length > 2 ? m.chars[2] > 0 : (m.chars[0] > 0 && !!m.aligned);
+    }
     return (type === 'yaku' ? m.chars[0] : m.chars[1]) > 0;
   }
   // 章を開いたとき最初に出す本文。英米文学のように原文を先に見せたい分野は APP.firstType で変える
@@ -375,7 +380,7 @@
   }
   function noteOf(w, type) {
     // 「現代語訳」という語は分野で変わる（英米文学は日本語訳）。APP に出しておく。
-    if (type === 'taisho') return APP.taishoNote || '原文と現代語訳を一段ずつ並べています。';
+    if (type === 'taisho') return w.taishoNote || APP.taishoNote || '原文と現代語訳を一段ずつ並べています。';
     var label = labelOf(w, type);
     for (var i = 0; i < w.sources.length; i++) {
       if (w.sources[i].label === label) {
@@ -462,14 +467,17 @@
     body.textContent = '';
     var frag = document.createDocumentFragment();
     if (type === 'taisho') {
+      // 対照用の訳（t）を別に持つ作品はそれを並べる。無い作品はふだんの訳をそのまま並べる。
+      var ys = d.t || d.y;
       d.g.forEach(function (line, i) {
         var box = el('div', 'pair');
         box.appendChild(el('p', 'gen' + (line.charAt(0) === 'w' ? ' waka' : ''), line.slice(1)));
-        if (d.y[i]) {
-          // 種類つきの段落（rich）は先頭1字が印なので落とし、ルビも組んで出す
+        if (ys[i]) {
+          // 種類つきの段落（rich の訳）は先頭1字が印なので落とす。対照用の訳に印は付けない。
+          var yt = (!d.t && curWork && curWork.rich) ? ys[i].slice(1) : ys[i];
           var yp = el('p', 'yak');
-          if (curWork && curWork.rich) ruby(yp, d.y[i].slice(1));
-          else yp.textContent = d.y[i];
+          if (curWork && curWork.rich) ruby(yp, yt);
+          else yp.textContent = yt;
           box.appendChild(yp);
         }
         frag.appendChild(box);
