@@ -1736,13 +1736,13 @@ const NOTES = {
   ],
   'women/47': [
     { w: 'squirrels', d: 'りす' },
-    { w: 'discouragements', d: '気をくじくできごと' },
     { w: 'benevolent', d: '情け深い' },
-    { w: 'throughout', d: '…のあいだじゅう' },
     { w: 'contributions', d: '寄せ集めた品、寄付' },
     { w: 'establishment', d: '店、施設' },
-    { w: 'cheerfulness', d: '快活さ' },
     { w: 'approvingly', d: 'よしとするように' },
+    { w: 'destitution', d: '困窮' },
+    { w: 'incorrigible', d: '手に負えない' },
+    { w: 'exhilarating', d: '心を浮き立たせる' },
   ],
 };
 
