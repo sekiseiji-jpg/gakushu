@@ -1,16 +1,16 @@
 // オフライン対応：骨組みは先に保存し、本文は読んだ巻だけをあとから保存する。
 // 全巻をまとめて保存する操作は設定シートにあり、ページ側から同じキャッシュに入れる（app.js）。
 // ファイルを更新したときは CACHE の番号を上げる（index.html の ?v= と同じ番号にする）。
-const CACHE = 'eibeibungaku-v18';          // 骨組み（版を上げると入れ替わる）
+const CACHE = 'eibeibungaku-v19';          // 骨組み（版を上げると入れ替わる）
 const TEXTS = 'eibeibungaku-text';     // 本文（版を上げても残す）
 const SHELL = [
   './',
   'index.html',
-  'style.css?v=18',
-  'data-works.js?v=18',
-  'data-notes.js?v=18',
-  'data-authors.js?v=18',
-  'app.js?v=18',
+  'style.css?v=19',
+  'data-works.js?v=19',
+  'data-notes.js?v=19',
+  'data-authors.js?v=19',
+  'app.js?v=19',
   'manifest.webmanifest',
   'icon-192.png',
   'icon-512.png',
