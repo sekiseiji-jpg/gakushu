@@ -43,6 +43,21 @@ function toast(msg) {
   clearTimeout(toast._t);
   toast._t = setTimeout(() => t.classList.remove('show'), 1800);
 }
+// 本文資料や選択肢そのものに丸数字がある問では、丸数字が操作の番号や本文の文を指している
+// （社会/知見.md 8.7）。並べ替えると番号と中身が合わなくなるので、データの並びのまま出す。
+function hasOwnMaru(q) { return /[①-⑳]/.test((q.src || '') + q.choices.join('')); }
+
+// 解説の丸数字はデータの並び（choices の順）で書いてある。並べ替えて出したときは、
+// 画面の番号に付け替える。「①②③はいずれも」のような続き番号は、付け替えたあと小さい順に並べる。
+function renumberExp(exp, idx) {
+  if (idx.every((oi, n) => oi === n)) return exp;
+  return String(exp).replace(/[①-⑧]+/g, (run) => {
+    const ns = [...run].map((c) => idx.indexOf(CIRCLED.indexOf(c)));
+    if (ns.some((n) => n < 0)) return run;
+    return ns.sort((x, y) => x - y).map((n) => CIRCLED[n]).join('');
+  });
+}
+
 function shuffle(a) {
   const r = a.slice();
   for (let i = r.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [r[i], r[j]] = [r[j], r[i]]; }
@@ -361,7 +376,7 @@ function showQuestion() {
   $('#q-progress').textContent = `第${session.i + 1}問 / 全${session.list.length}問　正解 ${session.correct}`;
   $('#q-bar').style.width = (session.i / session.list.length * 100) + '%';
   // 年代配列・組合せは選択肢の順序に意味があるためシャッフルしない
-  const canShuffle = S.set.shuffle && (q.type === 'sel' || q.type === 'src');
+  const canShuffle = S.set.shuffle && (q.type === 'sel' || q.type === 'src') && !hasOwnMaru(q);
   let idx = q.choices.map((_, i) => i);
   if (canShuffle) idx = shuffle(idx);
   session.cur = { q, idx, answered: false };
@@ -390,9 +405,10 @@ function answer(oi) {
   if (session.cur.answered) return;
   session.cur.answered = true;
   const q = session.cur.q;
+  const exp = renumberExp(q.exp, session.cur.idx);
   const ok = oi === q.a;
   if (ok) session.correct++;
-  session.log.push({ id: q.id, ok });
+  session.log.push({ id: q.id, ok, exp });
 
   const st = S.qstat[q.id] || { o: 0, x: 0 };
   st.o++; if (!ok) st.x++;
@@ -411,7 +427,7 @@ function answer(oi) {
   const pos = session.cur.idx.indexOf(q.a) + 1;
   $('#q-feedback').innerHTML = `
     <div class="verdict ${ok ? 'ok' : 'ng'}">${ok ? '◯ 正解' : '✕ 不正解'}　正解は ${CIRCLED[pos - 1]}</div>
-    <div class="exp"><div class="exp-h">解説</div>${esc(q.exp)}</div>`;
+    <div class="exp"><div class="exp-h">解説</div>${esc(exp)}</div>`;
   $('#btn-q-next').classList.remove('hidden');
   $('#btn-q-next').textContent = session.i + 1 >= session.list.length ? '結果を見る →' : '次の問題 →';
   $('#q-bar').style.width = ((session.i + 1) / session.list.length * 100) + '%';
@@ -430,7 +446,8 @@ function finishQuiz() {
   save();
   const msg = p === 100 ? '満点です。文句なし！' : p >= 80 ? '共通テスト本番でも十分戦えるレベルです。' :
     p >= 60 ? 'あと一歩。解説を読み直して穴を埋めましょう。' : '基本事項の確認から始めましょう。「詳細」を読み直すのがおすすめです。';
-  const wrong = session.log.filter((l) => !l.ok).map((l) => QUIZ.find((q) => q.id === l.id));
+  // 解説は、出題したときの番号に付け替えたものを出す
+  const wrong = session.log.filter((l) => !l.ok).map((l) => ({ ...QUIZ.find((q) => q.id === l.id), exp: l.exp }));
 
   $('#quiz-play').classList.add('hidden');
   $('#quiz-result').classList.remove('hidden');

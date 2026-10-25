@@ -1,6 +1,6 @@
 // オフライン対応: アプリのファイルはネット優先で取得し、つながらないときはキャッシュを使う
 // ファイルを更新したら CACHE の番号と、index.html の ?v= の番号を一緒に上げる
-const CACHE = 'eidokkai-v5';
+const CACHE = 'eidokkai-v6';
 const FILES = [
   './',
   'index.html',
