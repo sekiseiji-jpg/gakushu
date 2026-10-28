@@ -458,6 +458,22 @@
     }
     return -1;
   }
+  // 短い知らせ。栞をはさんだときなどに、1.4秒だけ出して消える。
+  // 置き場所は作らず、必要になったときに body へ足す（HTML を分野ごとに直さずに済む）
+  var tipWait = null;
+  function tip(msg) {
+    var e = $('tip');
+    if (!e) {
+      e = el('div', 'tip');
+      e.id = 'tip';
+      e.setAttribute('role', 'status');      // 読み上げにも伝わるようにする
+      document.body.appendChild(e);
+    }
+    e.textContent = msg;
+    e.classList.add('on');
+    clearTimeout(tipWait);
+    tipWait = setTimeout(function () { e.classList.remove('on'); }, 1400);
+  }
   function paintMarkBtn() {
     var b = $('sio-btn');
     if (!b) return;
@@ -468,6 +484,7 @@
   function toggleMark() {
     if (!curWork || !curMaki) return;
     var i = markAt(curWork.id, curMaki.no);
+    tip(i >= 0 ? '栞をはずしました' : '栞をはさみました');
     if (i >= 0) st.marks.splice(i, 1);
     else {
       var p = nowPara();

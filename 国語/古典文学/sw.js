@@ -1,14 +1,14 @@
 // オフライン対応：骨組みは先に保存し、本文は読んだ巻だけをあとから保存する。
 // 全巻をまとめて保存する操作は設定シートにあり、ページ側から同じキャッシュに入れる（app.js）。
 // ファイルを更新したときは CACHE の番号を上げる（index.html の ?v= と同じ番号にする）。
-const CACHE = 'kotenbungaku-v33';          // 骨組み（版を上げると入れ替わる）
+const CACHE = 'kotenbungaku-v34';          // 骨組み（版を上げると入れ替わる）
 const TEXTS = 'kotenbungaku-text';     // 本文（版を上げても残す）
 const SHELL = [
   './',
   'index.html',
-  'style.css?v=33',
-  'data-works.js?v=33',
-  'app.js?v=33',
+  'style.css?v=34',
+  'data-works.js?v=34',
+  'app.js?v=34',
   'manifest.webmanifest',
   'icon-192.png',
   'icon-512.png',
