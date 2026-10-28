@@ -28,7 +28,11 @@ self.addEventListener('install', (e) => {
 self.addEventListener('activate', (e) => {
   e.waitUntil(
     caches.keys()
-      .then((keys) => Promise.all(keys.filter((k) => k !== CACHE).map((k) => caches.delete(k))))
+      // 消すのは自分の古い版だけにする。キャッシュはドメイン全体で共有なので、
+      // 名前で絞らないと同じドメインに置いた別のアプリまで消してしまう
+      .then((keys) => Promise.all(keys
+        .filter((k) => k.startsWith('eidokkai') && k !== CACHE)
+        .map((k) => caches.delete(k))))
       .then(() => self.clients.claim()),
   );
 });
