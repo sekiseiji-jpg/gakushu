@@ -25,7 +25,7 @@
   WORKS.forEach(function (w) { workById[w.id] = w; });
 
   /* ---------- 保存（設定と読んだ記録） ---------- */
-  var st = { size: 'm', theme: 'auto', lh: 'n', rate: '1', read: {}, last: null };
+  var st = { size: 'm', theme: 'auto', lh: 'n', rate: '1', read: {}, last: null, marks: [] };
   try {
     var raw = localStorage.getItem(KEY);
     if (raw) {
@@ -246,8 +246,48 @@
   }
 
   /* ---------- 画面1 作品一覧 ---------- */
+  function markRow(kind, b) {
+    var w = workById[b.w];
+    if (!w) return null;
+    var m = w.maki.filter(function (x) { return String(x.no) === String(b.m); })[0];
+    if (!m) return null;
+    var row = el('div', 'siorow');
+    var go1 = el('button', 'siogo');
+    go1.appendChild(el('span', 'siok' + (kind === '栞' ? ' is' : ''), kind));
+    var t = el('span', 'siot');
+    t.appendChild(el('b', null, w.title + '　第' + m.no + unitOf(w) + '　' + m.name));
+    t.appendChild(el('span', 'sios', b.s || m.lead || ''));
+    go1.appendChild(t);
+    go1.onclick = function () {
+      go('#w=' + w.id + '&m=' + m.no + '&t=' + (b.t || 'yaku') + '&p=' + (b.p || 0));
+    };
+    row.appendChild(go1);
+    if (kind === '栞') {
+      var x = el('button', 'siox', '×');
+      x.title = 'この栞をはずす';
+      x.onclick = function () {
+        var i = markAt(b.w, b.m);
+        if (i >= 0) { st.marks.splice(i, 1); save(); renderMarks(); }
+      };
+      row.appendChild(x);
+    }
+    return row;
+  }
+  function renderMarks() {
+    var box = $('sio-box');
+    if (!box) return;
+    box.textContent = '';
+    var rows = [];
+    if (st.last) { var r = markRow('続き', st.last); if (r) rows.push(r); }
+    st.marks.forEach(function (b) { var r2 = markRow('栞', b); if (r2) rows.push(r2); });
+    box.hidden = !rows.length;
+    if (!rows.length) return;
+    box.appendChild(el('b', null, '読みかけと栞'));
+    rows.forEach(function (r3) { box.appendChild(r3); });
+  }
   function renderWorks() {
     $('works-lead').textContent = APP.lead;
+    renderMarks();
     var box = $('work-list');
     box.textContent = '';
     WORKS.forEach(function (w) {
@@ -389,7 +429,69 @@
     }
     return '';
   }
-  function renderMaki(w, m, type) {
+  /* ---------- 栞 ---------- */
+  // 本文の段落に通し番号を振り、画面のいちばん上にある段落を「いまの位置」とする。
+  // 読みかけ（st.last）は自動で、栞（st.marks）は読者が自分ではさむ。
+  function paras() {
+    var b = $('maki-body');
+    return b ? b.querySelectorAll('[data-p]') : [];
+  }
+  function nowPara() {
+    var ps = paras();
+    for (var i = 0; i < ps.length; i++) {
+      if (ps[i].getBoundingClientRect().bottom > 96) return i;   // ヘッダーのぶん下げて測る
+    }
+    return ps.length ? ps.length - 1 : 0;
+  }
+  function paraText(i) {
+    var ps = paras();
+    return ps[i] ? ps[i].textContent.replace(/\s+/g, ' ').trim().slice(0, 30) : '';
+  }
+  function scrollToPara(i) {
+    var ps = paras();
+    if (!ps[i]) return;
+    window.scrollTo(0, Math.max(0, ps[i].getBoundingClientRect().top + window.pageYOffset - 86));
+  }
+  function markAt(wid, no) {
+    for (var i = 0; i < st.marks.length; i++) {
+      if (st.marks[i].w === wid && String(st.marks[i].m) === String(no)) return i;
+    }
+    return -1;
+  }
+  function paintMarkBtn() {
+    var b = $('sio-btn');
+    if (!b) return;
+    var on = curWork && curMaki && markAt(curWork.id, curMaki.no) >= 0;
+    b.classList.toggle('on', !!on);
+    b.textContent = on ? '🔖 栞をはずす' : '🔖 栞をはさむ';
+  }
+  function toggleMark() {
+    if (!curWork || !curMaki) return;
+    var i = markAt(curWork.id, curMaki.no);
+    if (i >= 0) st.marks.splice(i, 1);
+    else {
+      var p = nowPara();
+      st.marks.unshift({ w: curWork.id, m: curMaki.no, t: curType, p: p, s: paraText(p) });
+      st.marks = st.marks.slice(0, 50);        // 多すぎると一覧が読めないので50まで
+    }
+    save();
+    paintMarkBtn();
+  }
+  // 読んでいるあいだ、いまの位置を控えておく（読みかけ）
+  var posWait = null;
+  window.addEventListener('scroll', function () {
+    var v = $('view-maki');
+    if (posWait || !curWork || !curMaki || !v || v.classList.contains('hidden')) return;
+    posWait = setTimeout(function () {
+      posWait = null;
+      var v2 = $('view-maki');
+      if (!curWork || !curMaki || !v2 || v2.classList.contains('hidden')) return;
+      st.last = { w: curWork.id, m: curMaki.no, t: curType, p: nowPara() };
+      save();
+    }, 700);
+  });
+
+  function renderMaki(w, m, type, jumpP) {
     spStop();
     curWork = w; curMaki = m; curType = type;
     var h = $('maki-head');
@@ -443,8 +545,10 @@
       if (curMaki !== m || curType !== type) return;    // 読み込み中に別の巻へ移ったとき
       paint(body, d, type);
       st.read[w.id + '/' + m.no] = 1;
-      st.last = { w: w.id, m: m.no, t: type };
+      st.last = { w: w.id, m: m.no, t: type, p: jumpP || 0 };
       save();
+      paintMarkBtn();
+      if (jumpP) scrollToPara(jumpP);
     }, function () {
       body.textContent = '';
       body.appendChild(el('div', 'err', '本文を読み込めませんでした。通信を確かめて、もう一度お試しください。'));
@@ -493,6 +597,8 @@
       d.y.forEach(function (p) { frag.appendChild(el('p', null, p)); });
     }
     body.appendChild(frag);
+    // 栞と読みかけのために、段落に通し番号を振っておく
+    for (var i = 0; i < body.children.length; i++) body.children[i].setAttribute('data-p', i);
   }
 
   /* ---------- 読み上げ ----------
@@ -855,7 +961,7 @@
         // URL で指定がなければ、その分野の既定（APP.firstType）に従う
         var want = (q.t === 'genbun' || q.t === 'taisho' || q.t === 'yaku') ? q.t : firstType(m);
         if (!has(m, want)) want = firstType(m);
-        renderMaki(w, m, want);
+        renderMaki(w, m, want, Number(q.p) || 0);
         show('maki');
         $('bar-title').textContent = w.title + '　' + m.name;
         window.scrollTo(0, 0);
@@ -880,6 +986,8 @@
     $('bar-title').textContent = APP.title;
   }
   window.addEventListener('hashchange', route);
+
+  if ($('sio-btn')) $('sio-btn').onclick = toggleMark;
 
   $('btn-back').onclick = function () {
     var q = parse();
@@ -912,7 +1020,7 @@
   $('set-lh').onchange = function () { st.lh = this.value; applySettings(); save(); };
   $('btn-clear').onclick = function () {
     if (!confirm('読んだ' + U0 + 'の記録を消します。よろしいですか。')) return;
-    st.read = {}; st.last = null; save(); route();
+    st.read = {}; st.last = null; st.marks = []; save(); route();
     $('read-hint').textContent = '読んだ' + U0 + 'は 0';
   };
 

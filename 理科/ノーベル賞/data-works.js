@@ -9,7 +9,7 @@ const APP = {
   icon: '🏅',
   unit: '人',
   textVer: '1',
-  cache: 'nobel-v5',
+  cache: 'nobel-v7',
   textCache: 'nobel-text',          // この分野は本文を持たないが、sw.js と形をそろえておく
   authorWord: '受賞者',
   authorsLead: 'ノーベル賞の理化学分野（物理学賞・化学賞・生理学医学賞）を受けた日本人28人です。受賞年の順に並べています。',
