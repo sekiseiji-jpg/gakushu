@@ -246,7 +246,8 @@
   }
 
   /* ---------- 画面1 作品一覧 ---------- */
-  function markRow(kind, b) {
+  // withTitle… 作品ごとにまとめた中では作品名を繰り返さないので、見出し側に任せる
+  function markRow(kind, b, withTitle) {
     var w = workById[b.w];
     if (!w) return null;
     var m = w.maki.filter(function (x) { return String(x.no) === String(b.m); })[0];
@@ -255,7 +256,8 @@
     var go1 = el('button', 'siogo');
     go1.appendChild(el('span', 'siok' + (kind === '栞' ? ' is' : ''), kind));
     var t = el('span', 'siot');
-    t.appendChild(el('b', null, w.title + '　第' + m.no + unitOf(w) + '　' + m.name));
+    var head = '第' + m.no + unitOf(w) + '　' + m.name;
+    t.appendChild(el('b', null, withTitle ? w.title + '　' + head : head));
     t.appendChild(el('span', 'sios', b.s || m.lead || ''));
     go1.appendChild(t);
     go1.onclick = function () {
@@ -277,13 +279,34 @@
     var box = $('sio-box');
     if (!box) return;
     box.textContent = '';
-    var rows = [];
-    if (st.last) { var r = markRow('続き', st.last); if (r) rows.push(r); }
-    st.marks.forEach(function (b) { var r2 = markRow('栞', b); if (r2) rows.push(r2); });
-    box.hidden = !rows.length;
-    if (!rows.length) return;
+    var frag = document.createDocumentFragment();
+    var n = 0;
+
+    // 読みかけは1件だけなので、作品名を付けていちばん上に置く
+    if (st.last) {
+      var r = markRow('続き', st.last, true);
+      if (r) { frag.appendChild(r); n++; }
+    }
+    // 栞は作品ごとにまとめる。並びは本棚の順、作品の中は巻の順
+    WORKS.forEach(function (w) {
+      var mine = st.marks.filter(function (b) { return b.w === w.id; })
+        .sort(function (a, b) { return Number(a.m) - Number(b.m); });
+      if (!mine.length) return;
+      var h = el('div', 'siow');
+      h.appendChild(el('span', 'siowi', w.icon || ''));
+      h.appendChild(el('span', 'siownm', w.title));
+      h.appendChild(el('span', 'siownn', mine.length + '件'));
+      frag.appendChild(h);
+      mine.forEach(function (b) {
+        var r2 = markRow('栞', b, false);
+        if (r2) { frag.appendChild(r2); n++; }
+      });
+    });
+
+    box.hidden = !n;
+    if (!n) return;
     box.appendChild(el('b', null, '読みかけと栞'));
-    rows.forEach(function (r3) { box.appendChild(r3); });
+    box.appendChild(frag);
   }
   function renderWorks() {
     $('works-lead').textContent = APP.lead;

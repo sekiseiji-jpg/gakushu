@@ -339,3 +339,11 @@ body{
   opacity:0; pointer-events:none; transition:opacity .18s ease, transform .18s ease; z-index:50}
 .tip.on{opacity:1; transform:translate(-50%, 0)}
 @media (prefers-reduced-motion: reduce){ .tip{transition:none} }
+
+/* 栞の一覧の、作品ごとの見出し */
+.siow{display:flex; align-items:baseline; gap:8px; margin:14px 0 2px;
+  padding-top:10px; border-top:1px solid var(--border)}
+.siow:first-of-type{margin-top:10px}
+.siowi{flex:none; font-size:1.05em}
+.siownm{font-weight:600; font-size:.95em}
+.siownn{margin-left:auto; font-size:.8em; color:var(--muted)}

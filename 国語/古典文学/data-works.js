@@ -8,7 +8,7 @@ const APP = {
   icon: '📕',
   unit: '巻',                      // 作品ごとに違うときは WORKS の unit が勝つ
   textVer: '20',                   // text/ の ?v=（本文を直したときだけ上げる）
-  cache: 'kotenbungaku-v34',
+  cache: 'kotenbungaku-v35',
   textCache: 'kotenbungaku-text',       // sw.js の CACHE と必ず同じにする
   lead: '原文と現代語訳を並べて、古典を通しで読むための本棚です。巻ごとに要約がついています。',
 };
