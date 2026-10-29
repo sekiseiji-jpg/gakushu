@@ -246,6 +246,14 @@
   }
 
   /* ---------- 画面1 作品一覧 ---------- */
+  // 栞は巻の途中にもはさめるので、どの本文のどのあたりかを小さく添える
+  function markWhere(b) {
+    var t = b.t || 'yaku';
+    var s = t === 'genbun' ? '原文' : (t === 'taisho' ? '対照' : '');
+    var p = Number(b.p) || 0;
+    if (p > 0) s += (s ? '　' : '') + (p + 1) + '段目';
+    return s;
+  }
   // withTitle… 作品ごとにまとめた中では作品名を繰り返さないので、見出し側に任せる
   function markRow(kind, b, withTitle) {
     var w = workById[b.w];
@@ -257,7 +265,10 @@
     go1.appendChild(el('span', 'siok' + (kind === '栞' ? ' is' : ''), kind));
     var t = el('span', 'siot');
     var head = '第' + m.no + unitOf(w) + '　' + m.name;
-    t.appendChild(el('b', null, withTitle ? w.title + '　' + head : head));
+    var hb = el('b', null, withTitle ? w.title + '　' + head : head);
+    var where = markWhere(b);
+    if (where) hb.appendChild(el('span', 'siop', where));
+    t.appendChild(hb);
     t.appendChild(el('span', 'sios', b.s || m.lead || ''));
     go1.appendChild(t);
     go1.onclick = function () {
@@ -268,7 +279,7 @@
       var x = el('button', 'siox', '×');
       x.title = 'この栞をはずす';
       x.onclick = function () {
-        var i = markAt(b.w, b.m);
+        var i = markAt(b.w, b.m, b.t, b.p);
         if (i >= 0) { st.marks.splice(i, 1); save(); renderMarks(); }
       };
       row.appendChild(x);
@@ -287,10 +298,12 @@
       var r = markRow('続き', st.last, true);
       if (r) { frag.appendChild(r); n++; }
     }
-    // 栞は作品ごとにまとめる。並びは本棚の順、作品の中は巻の順
+    // 栞は作品ごとにまとめる。並びは本棚の順、作品の中は巻の順、同じ巻なら前のほうから
     WORKS.forEach(function (w) {
       var mine = st.marks.filter(function (b) { return b.w === w.id; })
-        .sort(function (a, b) { return Number(a.m) - Number(b.m); });
+        .sort(function (a, b) {
+          return (Number(a.m) - Number(b.m)) || ((Number(a.p) || 0) - (Number(b.p) || 0));
+        });
       if (!mine.length) return;
       var h = el('div', 'siow');
       h.appendChild(el('span', 'siowi', w.icon || ''));
@@ -455,6 +468,8 @@
   /* ---------- 栞 ---------- */
   // 本文の段落に通し番号を振り、画面のいちばん上にある段落を「いまの位置」とする。
   // 読みかけ（st.last）は自動で、栞（st.marks）は読者が自分ではさむ。
+  // 栞は巻ではなく段落にはさむので、ひとつの巻に何か所でも立てられる。
+  // 段落の番号は本文の種類ごとに数えかたが違うので、作品・巻・種類・段落の四つで一枚と見る。
   function paras() {
     var b = $('maki-body');
     return b ? b.querySelectorAll('[data-p]') : [];
@@ -475,9 +490,12 @@
     if (!ps[i]) return;
     window.scrollTo(0, Math.max(0, ps[i].getBoundingClientRect().top + window.pageYOffset - 86));
   }
-  function markAt(wid, no) {
+  function markAt(wid, no, type, p) {
     for (var i = 0; i < st.marks.length; i++) {
-      if (st.marks[i].w === wid && String(st.marks[i].m) === String(no)) return i;
+      var b = st.marks[i];
+      if (b.w === wid && String(b.m) === String(no) &&
+        (b.t || 'yaku') === (type || 'yaku') &&
+        (Number(b.p) || 0) === (Number(p) || 0)) return i;
     }
     return -1;
   }
@@ -497,31 +515,54 @@
     clearTimeout(tipWait);
     tipWait = setTimeout(function () { e.classList.remove('on'); }, 1400);
   }
+  // ボタンはいま画面の上にある段落についての操作なので、読みながら文字が入れかわる
   function paintMarkBtn() {
     var b = $('sio-btn');
     if (!b) return;
-    var on = curWork && curMaki && markAt(curWork.id, curMaki.no) >= 0;
-    b.classList.toggle('on', !!on);
-    b.textContent = on ? '🔖 栞をはずす' : '🔖 栞をはさむ';
+    var on = !!(curWork && curMaki) &&
+      markAt(curWork.id, curMaki.no, curType, nowPara()) >= 0;
+    b.classList.toggle('on', on);
+    b.textContent = on ? '🔖 ここの栞をはずす' : '🔖 ここに栞をはさむ';
+  }
+  // 栞をはさんだ段落は、本文の左に印を出して目でも分かるようにする
+  function paintBodyMarks() {
+    var ps = paras();
+    for (var i = 0; i < ps.length; i++) {
+      ps[i].classList.remove('marked');
+      ps[i].removeAttribute('title');
+    }
+    if (!curWork || !curMaki) return;
+    st.marks.forEach(function (b) {
+      if (b.w !== curWork.id || String(b.m) !== String(curMaki.no)) return;
+      if ((b.t || 'yaku') !== curType) return;
+      var p = ps[Number(b.p) || 0];
+      if (p) { p.classList.add('marked'); p.title = 'ここに栞をはさんでいます'; }
+    });
   }
   function toggleMark() {
     if (!curWork || !curMaki) return;
-    var i = markAt(curWork.id, curMaki.no);
-    tip(i >= 0 ? '栞をはずしました' : '栞をはさみました');
-    if (i >= 0) st.marks.splice(i, 1);
+    var p = nowPara();
+    var i = markAt(curWork.id, curMaki.no, curType, p);
+    if (i >= 0) { st.marks.splice(i, 1); tip('栞をはずしました'); }
     else {
-      var p = nowPara();
       st.marks.unshift({ w: curWork.id, m: curMaki.no, t: curType, p: p, s: paraText(p) });
       st.marks = st.marks.slice(0, 50);        // 多すぎると一覧が読めないので50まで
+      tip(p > 0 ? (p + 1) + '段目に栞をはさみました' : '栞をはさみました');
     }
     save();
     paintMarkBtn();
+    paintBodyMarks();
   }
-  // 読んでいるあいだ、いまの位置を控えておく（読みかけ）
-  var posWait = null;
+  // 読んでいるあいだ、いまの位置を控えておく（読みかけ）。
+  // 栞のボタンもいまの段落しだいで文字が変わるので、こちらは短めに追いかける。
+  var posWait = null, btnWait = null;
   window.addEventListener('scroll', function () {
     var v = $('view-maki');
-    if (posWait || !curWork || !curMaki || !v || v.classList.contains('hidden')) return;
+    if (!curWork || !curMaki || !v || v.classList.contains('hidden')) return;
+    if (!btnWait) {
+      btnWait = setTimeout(function () { btnWait = null; paintMarkBtn(); }, 120);
+    }
+    if (posWait) return;
     posWait = setTimeout(function () {
       posWait = null;
       var v2 = $('view-maki');
@@ -587,8 +628,14 @@
       st.read[w.id + '/' + m.no] = 1;
       st.last = { w: w.id, m: m.no, t: type, p: jumpP || 0 };
       save();
-      paintMarkBtn();
-      if (jumpP) scrollToPara(jumpP);
+      paintBodyMarks();
+      // 本文が保存済みだとここまで route() の途中なので、巻の画面はまだ出ていない。
+      // 隠れているあいだは段落の位置が測れないので、画面が出そろってから寄せる。
+      setTimeout(function () {
+        if (curMaki !== m || curType !== type) return;
+        if (jumpP) scrollToPara(jumpP);
+        paintMarkBtn();
+      }, 0);
     }, function () {
       body.textContent = '';
       body.appendChild(el('div', 'err', '本文を読み込めませんでした。通信を確かめて、もう一度お試しください。'));
@@ -1001,10 +1048,13 @@
         // URL で指定がなければ、その分野の既定（APP.firstType）に従う
         var want = (q.t === 'genbun' || q.t === 'taisho' || q.t === 'yaku') ? q.t : firstType(m);
         if (!has(m, want)) want = firstType(m);
-        renderMaki(w, m, want, Number(q.p) || 0);
+        var jump = Number(q.p) || 0;
+        renderMaki(w, m, want, jump);
         show('maki');
         $('bar-title').textContent = w.title + '　' + m.name;
-        window.scrollTo(0, 0);
+        // 栞や読みかけで段落を指しているときは、そこへ寄せるのを邪魔しない。
+        // （本文が読み込み済みだと renderMaki の中ですぐ寄せるので、あとから上へ戻してしまう）
+        if (!jump) window.scrollTo(0, 0);
         return;
       }
     }

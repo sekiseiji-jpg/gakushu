@@ -331,6 +331,14 @@ body{
   background:var(--surface2); color:var(--muted); font:inherit; cursor:pointer}
 .siox:hover{border-color:var(--c); color:var(--c)}
 #sio-btn.on{background:var(--c); color:var(--header-fg); border-color:var(--c)}
+.siop{margin-left:8px; font-weight:400; font-size:.84em; color:var(--muted)}
+
+/* 栞をはさんだ段落。本文の左に細い線を出す（読み上げ中の段落とは別の印） */
+.body .marked{position:relative}
+.body .marked::before{
+  content:''; position:absolute; top:.1em; bottom:.1em; left:-12px; width:3px;
+  border-radius:3px; background:var(--c);
+}
 
 /* 短い知らせ。栞をはさんだときに下から出て、すぐ消える */
 .tip{position:fixed; left:50%; bottom:28px; transform:translate(-50%, 12px);
